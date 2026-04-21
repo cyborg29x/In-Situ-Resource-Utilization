@@ -1,0 +1,10 @@
+{
+  "id": "mobile_refining",
+  "name": "Mobile Refining",
+  "version": "0.1.2",
+  "gameVersion": "0.98a-RC8",
+  "author": "cyborg29x",
+  "description": "Allows refining ore into metal while on the move using equipped ships.",
+  "jars": ["jars/MobileRefining.jar"],
+  "modPlugin": "com.mobilerefining.plugins.MobileRefiningPlugin"
+}

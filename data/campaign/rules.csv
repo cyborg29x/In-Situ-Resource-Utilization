@@ -1,0 +1,3 @@
+id,trigger,conditions,script,text,options,notes
+newgame_add,NGC,,AddAbility mobile_refining,,,
+load_game,Load,,AddAbility mobile_refining,,,

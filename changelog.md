@@ -1,0 +1,75 @@
+# Changelog
+
+All notable changes to this mod will be documented in this file.
+
+## [0.1.2] - 2026-04-21
+
+### Fixed
+- Mobile Refining ability now starts OFF and appears with enabled animation correctly
+  - Modified isUsable() to check canActivate() - ability now properly disabled when no ships have hullmod
+  - Modified pressButton() to use base class activate()/deactivate() methods instead of manual turnedOn toggle
+  - Updated showActiveIndicator() and showProgressIndicator() to use turnedOn state
+- Added modPlugin entry to mod_info.json to ensure MobileRefiningPlugin loads properly
+
+### Technical
+- Proper state management using base class methods ensures deactivate() is called when ability becomes unusable
+
+## [0.1.1] - 2026-04-21
+
+### Fixed
+- Mobile Refining ability now appears in Codex and UI for selection
+  - Migrated abilities.csv to Starsector 0.98a format
+  - Moved abilities.csv from data/abilities/ to data/campaign/
+  - Changed ability type from DURATION to TOGGLE
+  - Set unlockedAtStart=TRUE
+  - Added uiOn/uiOff sprites for proper UI display
+- Ability always appears in selection UI but only toggles ON when ships have Mobile Refinery hullmod
+  - Changed isUsable() to always return true
+  - Added pressButton() override with canActivate() check
+  - canActivate() returns true only if fleet has ships with mobile_refinery hullmod
+- MobileRefiningPlugin now uses correct API methods:
+  - Uses PlayerFleet.hasAbility() for check
+  - Uses CharacterData.addAbility() to grant
+
+### Technical
+- Simplified abilities.csv format (matching ForgeProduction):
+  - name,id,type,tags,activationDays,activationCooldown,durationDays,...
+  - Empty timing fields for TOGGLE type
+  - uiOn/uiOff sprites specified
+- Migrated from BaseDurationAbility to BaseToggleAbility
+- Simplified ability logic focusing on usability
+
+### Removed
+- Removed rules.csv based ability granting (no longer needed with CSV approach)
+
+## [0.1.0] - 2026-04-20
+
+Initial version
+
+### Added
+- Mobile Refining hullmod - allows ships to contribute to mobile refining operations
+- Mobile Refining ability - converts ore to metal while in campaign
+- Automatic ability granting to player fleet via ModPlugin
+- Compiled JAR support for modding
+
+### Technical
+- Created VSCode build configuration for compiling and packaging
+- Updated to use compiled Java (JAR) instead of Janino-based scripts
+- Migrated from data/hullmods to src/ for proper modding support
+
+### Mod Structure
+```
+MobileRefining_mod/
+├── src/com/mobilerefining/
+│   ├── abilities/MobileRefiningAbility.java
+│   ├── hullmods/MobileRefineryHullMod.java
+│   └── plugins/MobileRefiningPlugin.java
+├── data/
+│   ├── abilities/abilities.csv
+│   ├── hullmods/Hull_mods.csv
+│   └── config/settings.json
+├── graphics/
+├── jars/
+├── mod_info.json
+└── MobileRefining.mod
+```

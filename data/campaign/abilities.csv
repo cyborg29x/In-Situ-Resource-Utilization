@@ -1,0 +1,2 @@
+name,id,type,tags,activationDays,activationCooldown,durationDays,deactivationDays,deactivationCooldown,unlockedAtStart,defaultForAIFleet,musicSuppression,uiOn,uiOff,uiLoop,worldOn,worldOff,worldLoop,icon,plugin,ai,desc,sortOrder
+Mobile Refining,mobile_refining,TOGGLE,,,,,,,TRUE,,,mobile_refining_on,mobile_refining_off,,,,,graphics/abilities/mobile_refining.png,com.mobilerefining.abilities.MobileRefiningAbility,,Convert ore to metal using fleet's refining-equipped ships.,869

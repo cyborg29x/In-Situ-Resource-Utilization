@@ -1,0 +1,7 @@
+*.jar
+*.class
+
+/.vscode
+/build
+/jars
+/out

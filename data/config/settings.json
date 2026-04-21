@@ -1,0 +1,11 @@
+{
+  "modId": "mobile_refining",
+  "oreToMetalRatio": 3,
+  "refineRates": {
+    "CAPITAL": 10,
+    "CRUISER": 5,
+    "DESTROYER": 2,
+    "FRIGATE": 1
+  },
+  "hullmodCost": 40
+}
