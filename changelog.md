@@ -2,6 +2,26 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.3] - 2026-04-21
+
+### Fixed
+- Fixed IllegalFormatConversionException when displaying tooltip
+  - Changed tooltip format specifiers from `%.1f` to `%s` for String highlighting
+- Fixed floating-point precision issues in refining calculations
+  - Implemented persistent fraction storage for ore and metal
+  - Ore is now consumed 1 unit at a time (not batched in fractional amounts)
+  - Metal fractions accumulate and only add integer units to cargo when >= 1.0
+  - Uses SectorAPI.getPersistentData() for savegame persistence
+- Refining now pauses when cargo is full (without disabling ability)
+  - No ore is consumed until cargo space becomes available
+
+### Technical
+- Added persistent fraction tracking:
+  - MobileRefining_oreFraction - stores fractional ore between ticks
+  - MobileRefining_metalFraction - stores fractional metal between ticks
+- Fractions persist across game saves and app restarts
+- Integer-only cargo modifications prevent fractional space loss
+
 ## [0.1.2] - 2026-04-21
 
 ### Fixed

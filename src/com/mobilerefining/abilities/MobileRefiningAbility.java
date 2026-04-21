@@ -9,10 +9,13 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import com.fs.starfarer.api.combat.ShipAPI.HullSize;
 import java.awt.Color;
+import java.util.Map;
 
 public class MobileRefiningAbility extends BaseToggleAbility {
 
     public static final String HULLMOD_ID = "mobile_refinery";
+    private static final String PERSISTENT_KEY_ORE_FRACTION = "MobileRefining_oreFraction";
+    private static final String PERSISTENT_KEY_METAL_FRACTION = "MobileRefining_metalFraction";
 
     private static final float ORE_TO_METAL_RATIO = 3f;
     private static final float CAPITAL_REFINE_RATE = 10f;
@@ -37,21 +40,34 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         CargoAPI cargo = fleet.getCargo();
         float availableOre = cargo.getCommodityQuantity("ore");
+        float availableSpace = cargo.getSpaceLeft();
 
-        float oreToProcess = Math.min(oreRate * days, availableOre);
-        float metalProduced = oreToProcess / ORE_TO_METAL_RATIO;
+        Map<String, Object> persistentData = Global.getSector().getPersistentData();
+        Float oreFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORE_FRACTION);
+        Float metalFractionObj = (Float) persistentData.get(PERSISTENT_KEY_METAL_FRACTION);
 
-        float maxMetalFromOre = availableOre / ORE_TO_METAL_RATIO;
-        float maxMetalSpace = cargo.getSpaceLeft();
+        float oreFraction = (oreFractionObj != null) ? oreFractionObj : 0f;
+        float metalFraction = (metalFractionObj != null) ? metalFractionObj : 0f;
 
-        metalProduced = Math.min(metalProduced, maxMetalSpace);
-        metalProduced = Math.min(metalProduced, maxMetalFromOre);
+        oreFraction += oreRate * days;
 
-        float oreNeeded = metalProduced * ORE_TO_METAL_RATIO;
-        if (oreNeeded > 0 && metalProduced > 0) {
-            cargo.removeCommodity("ore", oreNeeded);
-            cargo.addCommodity("metals", metalProduced);
+        while (oreFraction >= 1f && availableOre >= 1f) {
+            cargo.removeCommodity("ore", 1f);
+            metalFraction += 1f / ORE_TO_METAL_RATIO;
+            oreFraction -= 1f;
+            availableOre -= 1f;
         }
+
+        if (availableSpace >= 1f) {
+            while (metalFraction >= 1f && availableSpace >= 1f) {
+                cargo.addCommodity("metals", 1f);
+                metalFraction -= 1f;
+                availableSpace -= 1f;
+            }
+        }
+
+        persistentData.put(PERSISTENT_KEY_ORE_FRACTION, oreFraction);
+        persistentData.put(PERSISTENT_KEY_METAL_FRACTION, metalFraction);
     }
 
     @Override
