@@ -1,0 +1,48 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dir 'C:/Games/Starsector 0.98a-RC8/starsector-core'
+    }
+}
+
+dependencies {
+    implementation name: 'starfarer.api'
+    implementation name: 'starfarer_obf'
+    implementation name: 'fs.common_obf'
+    implementation name: 'json'
+    implementation name: 'log4j-1.2.9'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+        }
+    }
+}
+
+jar {
+    archiveFileName = 'MobileRefining.jar'
+    destinationDirectory = file('jars')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes(
+            'Manifest-Version': '1.0',
+            'Created-By': 'Gradle'
+        )
+    }
+}
+
+task copyDependencies(type: Copy) {
+    into 'libs'
+    from configurations.compileClasspath
+}

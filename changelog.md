@@ -2,6 +2,28 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.5] - 2026-04-22
+
+### Added
+- Now using Gradle 9.4.1 for .jar compilation
+
+### Fixed
+- Fixed build path configuration for Gradle
+  - Configured build.gradle to reference Starsector game JARs directly
+  - Uses starfarer.api, starfarer_obf, fs.common_obf, json, and log4j-1.2.9 from game install
+  - Points to `C:/Games/Starsector 0.98a-RC8/starsector-core` flatDir repository
+- Removed unnecessary bundled resources from JAR output
+  - Removed data/**, graphics/**, mod_info.json, MobileRefining.mod from JAR
+  - JAR now only contains compiled /com/ classes and META-INF as intended
+- Removed Maven Central org.json dependency
+  - Now uses game's bundled json.jar for org.json.JSONObject
+
+### Technical
+- Upgraded Gradle wrapper to version 9.4.1
+- Build produces clean JAR with only compiled Java classes
+- Added .vscode/ folder with tasks.json and settings.json for VS Code development
+  - Ctrl+Shift+B runs build task
+
 ## [0.1.4] - 2026-04-22
 
 ### Fixed
