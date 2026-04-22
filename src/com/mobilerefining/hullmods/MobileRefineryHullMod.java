@@ -14,7 +14,7 @@ public class MobileRefineryHullMod extends BaseHullMod {
     @Override
     public String getDescriptionParam(int index, HullSize hullSize) {
         if (index == 0) {
-            return String.valueOf(MobileRefiningPlugin.HULLMOD_COST);
+            return "10";
         }
         return null;
     }

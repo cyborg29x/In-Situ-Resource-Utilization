@@ -9,11 +9,10 @@ public class MobileRefiningPlugin extends BaseModPlugin {
     public static final String ABILITY_ID = "mobile_refining";
 
     public static float ORE_TO_METAL_RATIO = 3f;
-    public static float CAPITAL_REFINE_RATE = 10f;
-    public static float CRUISER_REFINE_RATE = 5f;
-    public static float DESTROYER_REFINE_RATE = 2f;
-    public static float FRIGATE_REFINE_RATE = 1f;
-    public static int HULLMOD_COST = 40;
+    public static float BUDGET_PERCENT = 0.10f;
+    public static final int ORE_PRICE = 10;
+    public static final int METAL_PRICE = 30;
+    public static final int HULLMOD_COST = 40;
 
     @Override
     public void onGameLoad(boolean newGame) {
@@ -31,22 +30,10 @@ public class MobileRefiningPlugin extends BaseModPlugin {
 
     private void loadConfig() throws Exception {
         JSONObject config = Global.getSettings().loadJSON("data/config/settings.json", "mobile_refining");
-        
+
         if (config != null) {
             ORE_TO_METAL_RATIO = (float) config.optDouble("oreToMetalRatio", ORE_TO_METAL_RATIO);
-            HULLMOD_COST = config.optInt("hullmodCost", HULLMOD_COST);
-
-            try {
-                JSONObject rates = config.getJSONObject("refineRates");
-                if (rates != null) {
-                    CAPITAL_REFINE_RATE = (float) rates.optDouble("CAPITAL", CAPITAL_REFINE_RATE);
-                    CRUISER_REFINE_RATE = (float) rates.optDouble("CRUISER", CRUISER_REFINE_RATE);
-                    DESTROYER_REFINE_RATE = (float) rates.optDouble("DESTROYER", DESTROYER_REFINE_RATE);
-                    FRIGATE_REFINE_RATE = (float) rates.optDouble("FRIGATE", FRIGATE_REFINE_RATE);
-                }
-            } catch (org.json.JSONException ex) {
-                Global.getLogger(MobileRefiningPlugin.class).warn("Failed to load refineRates: " + ex.getMessage());
-            }
+            BUDGET_PERCENT = (float) config.optDouble("budgetPercent", BUDGET_PERCENT);
         }
     }
 

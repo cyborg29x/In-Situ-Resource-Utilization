@@ -1,2 +1,2 @@
 name,id,tier,rarity,tech/manufacturer,tags,uiTags,base value,unlocked,hidden,hiddenEverywhere,cost_frigate,cost_dest,cost_cruiser,cost_capital,script,desc,short,sprite
-Mobile Refinery,mobile_refinery,0,0,,logistics,Logistics;Requires Dock,0,true,false,false,40,40,40,40,com.mobilerefining.hullmods.MobileRefineryHullMod,Allows this ship to contribute to mobile refining operations when part of a fleet.,Mobile Refinery,graphics/hullmods/mobile_refinery.png
+Mobile Refinery,mobile_refinery,0,0,,logistics,Logistics;Requires Dock,0,true,false,false,8,16,24,40,com.mobilerefining.hullmods.MobileRefineryHullMod,Allows this ship to contribute 10%% of its cargo capacity as daily processing budget for mobile refining operations.,Mobile Refinery,graphics/hullmods/mobile_refinery.png

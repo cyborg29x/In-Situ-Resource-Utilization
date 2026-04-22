@@ -7,7 +7,6 @@ import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.impl.campaign.abilities.BaseToggleAbility;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
-import com.fs.starfarer.api.combat.ShipAPI.HullSize;
 import com.mobilerefining.plugins.MobileRefiningPlugin;
 import java.awt.Color;
 import java.util.Map;
@@ -30,8 +29,8 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         float days = Global.getSector().getClock().convertToDays(amount);
         if (days <= 0) return;
 
-        float oreRate = getTotalRefiningCapacity(fleet);
-        if (oreRate <= 0) return;
+        float totalBudget = getTotalProcessingBudget(fleet);
+        if (totalBudget <= 0) return;
 
         CargoAPI cargo = fleet.getCargo();
         float availableOre = cargo.getCommodityQuantity("ore");
@@ -44,7 +43,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         float oreFraction = (oreFractionObj != null) ? oreFractionObj : 0f;
         float metalFraction = (metalFractionObj != null) ? metalFractionObj : 0f;
 
-        oreFraction += oreRate * days;
+        oreFraction += (totalBudget * days) / MobileRefiningPlugin.ORE_PRICE;
 
         int maxOreToProcess = (int) Math.min(oreFraction, availableOre);
         if (maxOreToProcess > 0) {
@@ -71,30 +70,18 @@ public class MobileRefiningAbility extends BaseToggleAbility {
     protected void cleanupImpl() {
     }
 
-    private float getTotalRefiningCapacity(CampaignFleetAPI fleet) {
-        float totalRate = 0f;
+    private float getTotalProcessingBudget(CampaignFleetAPI fleet) {
+        float totalBudget = 0f;
 
         for (FleetMemberAPI member : fleet.getFleetData().getMembersListCopy()) {
             if (member.getVariant().hasHullMod(HULLMOD_ID)) {
-                HullSize size = member.getHullSpec().getHullSize();
-                switch (size) {
-                    case CAPITAL_SHIP:
-                        totalRate += MobileRefiningPlugin.CAPITAL_REFINE_RATE;
-                        break;
-                    case CRUISER:
-                        totalRate += MobileRefiningPlugin.CRUISER_REFINE_RATE;
-                        break;
-                    case DESTROYER:
-                        totalRate += MobileRefiningPlugin.DESTROYER_REFINE_RATE;
-                        break;
-                    default:
-                        totalRate += MobileRefiningPlugin.FRIGATE_REFINE_RATE;
-                        break;
-                }
+                float baseCargo = member.getHullSpec().getCargo();
+                float cargoCapacity = member.getStats().getCargoMod().computeEffective(baseCargo);
+                totalBudget += cargoCapacity * MobileRefiningPlugin.BUDGET_PERCENT;
             }
         }
 
-        return totalRate;
+        return totalBudget;
     }
 
     @Override
@@ -117,7 +104,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         CampaignFleetAPI fleet = getFleet();
         if (fleet == null) return false;
 
-        return getTotalRefiningCapacity(fleet) > 0f;
+        return getTotalProcessingBudget(fleet) > 0f;
     }
 
     @Override
@@ -146,11 +133,13 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         CampaignFleetAPI fleet = getFleet();
         if (fleet != null) {
-            float rate = getTotalRefiningCapacity(fleet);
-            if (rate > 0) {
-                tooltip.addPara("Refining capacity: %s ore/day", pad, highlight, String.format("%.1f", rate));
-                float metalRate = rate / MobileRefiningPlugin.ORE_TO_METAL_RATIO;
-                tooltip.addPara("Output: %s metal/day", pad, highlight, String.format("%.1f", metalRate));
+            float budget = getTotalProcessingBudget(fleet);
+            if (budget > 0) {
+                tooltip.addPara("Processing budget: %s credits/day", pad, highlight, String.format("%.1f", budget));
+                float maxOrePerDay = budget / MobileRefiningPlugin.ORE_PRICE;
+                float metalPerDay = maxOrePerDay / MobileRefiningPlugin.ORE_TO_METAL_RATIO;
+                tooltip.addPara("Max ore processed: %s/day", pad, highlight, String.format("%.1f", maxOrePerDay));
+                tooltip.addPara("Output: %s metal/day", pad, highlight, String.format("%.1f", metalPerDay));
             } else {
                 tooltip.addPara("No ships with Mobile Refinery hullmod in fleet.", pad, highlight);
             }

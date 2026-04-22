@@ -2,6 +2,34 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.6] - 2026-04-22
+
+### Changed
+- Hullmod now uses cargo-based processing budget instead of hull-size-based rates
+  - Processing budget = 10% of ship's cargo capacity per day
+  - Credits used to process ore at base price (10c)
+  - Converted at ore-to-metal ratio (3 ore → 1 metal)
+  - Ore price: 10c, Metal price: 30c (break-even ratio)
+- Processing budget now uses final cargo capacity after all modifiers
+  - Accounts for Expanded Cargo Holds, Shielded Cargo Holds, D-mods, etc.
+  - Uses getCargoMod().computeEffective() instead of base hullSpec cargo
+
+### Fixed
+- Hullmod description now correctly shows "10%" instead of showing hullmod cost percentage
+  - Changed Hull_mods.csv description to static 10%
+  - getDescriptionParam(0) now returns "10" for 10% display
+- Fixed ore processing overcount by ~10x
+  - Changed ore accumulation formula to divide by ORE_PRICE
+  - Budget (credits) converted to ore units before adding to oreFraction
+
+### Technical
+- Removed refineRates from settings.json
+  - No longer uses hull-size-based refine rates (CAPITAL/CRUISER/DESTROYER/FRIGATE)
+  - Processing now scales directly with cargo capacity
+- Added BUDGET_PERCENT constant (currently 0.10)
+- Added ORE_PRICE (10) and METAL_PRICE (30) constants
+- Updated hullmod costs: 8/16/24/40 for Frigate/Destroyer/Cruiser/Capital
+
 ## [0.1.5] - 2026-04-22
 
 ### Added
