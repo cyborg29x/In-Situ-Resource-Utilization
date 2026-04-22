@@ -1,7 +1,7 @@
 {
   "id": "mobile_refining",
   "name": "Mobile Refining",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "gameVersion": "0.98a-RC8",
   "author": "cyborg29x",
   "description": "Allows refining ore into metal while on the move using equipped ships.",

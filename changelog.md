@@ -2,6 +2,15 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.4] - 2026-04-22
+
+### Fixed
+- Fixed settings.json loading to use proper method
+  - Changed from getMergedJSONForMod() to loadJSON() with modId parameter
+  - Ensures mod config doesn't accidentally override other mods' settings
+  - Properly preserves nested config fields like refineRates
+  - Mod now loads settings correctly from settings.json instead of hardcoded values
+
 ## [0.1.3] - 2026-04-21
 
 ### Fixed

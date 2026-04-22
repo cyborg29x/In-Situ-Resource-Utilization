@@ -8,6 +8,7 @@ import com.fs.starfarer.api.impl.campaign.abilities.BaseToggleAbility;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import com.fs.starfarer.api.combat.ShipAPI.HullSize;
+import com.mobilerefining.plugins.MobileRefiningPlugin;
 import java.awt.Color;
 import java.util.Map;
 
@@ -16,12 +17,6 @@ public class MobileRefiningAbility extends BaseToggleAbility {
     public static final String HULLMOD_ID = "mobile_refinery";
     private static final String PERSISTENT_KEY_ORE_FRACTION = "MobileRefining_oreFraction";
     private static final String PERSISTENT_KEY_METAL_FRACTION = "MobileRefining_metalFraction";
-
-    private static final float ORE_TO_METAL_RATIO = 3f;
-    private static final float CAPITAL_REFINE_RATE = 10f;
-    private static final float CRUISER_REFINE_RATE = 5f;
-    private static final float DESTROYER_REFINE_RATE = 2f;
-    private static final float FRIGATE_REFINE_RATE = 1f;
 
     @Override
     protected void activateImpl() {
@@ -53,7 +48,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         while (oreFraction >= 1f && availableOre >= 1f) {
             cargo.removeCommodity("ore", 1f);
-            metalFraction += 1f / ORE_TO_METAL_RATIO;
+            metalFraction += 1f / MobileRefiningPlugin.ORE_TO_METAL_RATIO;
             oreFraction -= 1f;
             availableOre -= 1f;
         }
@@ -86,16 +81,16 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 HullSize size = member.getHullSpec().getHullSize();
                 switch (size) {
                     case CAPITAL_SHIP:
-                        totalRate += CAPITAL_REFINE_RATE;
+                        totalRate += MobileRefiningPlugin.CAPITAL_REFINE_RATE;
                         break;
                     case CRUISER:
-                        totalRate += CRUISER_REFINE_RATE;
+                        totalRate += MobileRefiningPlugin.CRUISER_REFINE_RATE;
                         break;
                     case DESTROYER:
-                        totalRate += DESTROYER_REFINE_RATE;
+                        totalRate += MobileRefiningPlugin.DESTROYER_REFINE_RATE;
                         break;
                     default:
-                        totalRate += FRIGATE_REFINE_RATE;
+                        totalRate += MobileRefiningPlugin.FRIGATE_REFINE_RATE;
                         break;
                 }
             }
@@ -161,7 +156,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             float rate = getTotalRefiningCapacity(fleet);
             if (rate > 0) {
                 tooltip.addPara("Refining capacity: %s ore/day", pad, highlight, String.format("%.1f", rate));
-                float metalRate = rate / ORE_TO_METAL_RATIO;
+                float metalRate = rate / MobileRefiningPlugin.ORE_TO_METAL_RATIO;
                 tooltip.addPara("Output: %s metal/day", pad, highlight, String.format("%.1f", metalRate));
             } else {
                 tooltip.addPara("No ships with Mobile Refinery hullmod in fleet.", pad, highlight);
