@@ -46,19 +46,17 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         oreFraction += oreRate * days;
 
-        while (oreFraction >= 1f && availableOre >= 1f) {
-            cargo.removeCommodity("ore", 1f);
-            metalFraction += 1f / MobileRefiningPlugin.ORE_TO_METAL_RATIO;
-            oreFraction -= 1f;
-            availableOre -= 1f;
+        int maxOreToProcess = (int) Math.min(oreFraction, availableOre);
+        if (maxOreToProcess > 0) {
+            cargo.removeCommodity("ore", maxOreToProcess);
+            metalFraction += maxOreToProcess / MobileRefiningPlugin.ORE_TO_METAL_RATIO;
+            oreFraction -= maxOreToProcess;
         }
 
-        if (availableSpace >= 1f) {
-            while (metalFraction >= 1f && availableSpace >= 1f) {
-                cargo.addCommodity("metals", 1f);
-                metalFraction -= 1f;
-                availableSpace -= 1f;
-            }
+        int maxMetalToAdd = (int) Math.min(metalFraction, availableSpace);
+        if (maxMetalToAdd > 0) {
+            cargo.addCommodity("metals", maxMetalToAdd);
+            metalFraction -= maxMetalToAdd;
         }
 
         persistentData.put(PERSISTENT_KEY_ORE_FRACTION, oreFraction);

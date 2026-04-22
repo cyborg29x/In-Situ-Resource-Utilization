@@ -9,7 +9,12 @@ All notable changes to this mod will be documented in this file.
   - Changed from getMergedJSONForMod() to loadJSON() with modId parameter
   - Ensures mod config doesn't accidentally override other mods' settings
   - Properly preserves nested config fields like refineRates
-  - Mod now loads settings correctly from settings.json instead of hardcoded values
+
+### Optimized
+- Replaced while-loop cargo operations with batch processing
+  - Removed ore/metal 1-unit-at-a-time processing in favor of batch operations
+  - Single cargo.addCommodity/removeCommodity call per tick instead of multiple
+  - Maintains integer-only cargo operations with fraction accumulation
 
 ## [0.1.3] - 2026-04-21
 
