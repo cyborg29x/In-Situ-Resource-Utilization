@@ -15,6 +15,9 @@ All notable changes to this mod will be documented in this file.
   - Removed ore/metal 1-unit-at-a-time processing in favor of batch operations
   - Single cargo.addCommodity/removeCommodity call per tick instead of multiple
   - Maintains integer-only cargo operations with fraction accumulation
+- Merged canActivate() into getTotalRefiningCapacity()
+  - Eliminated duplicate fleet member iteration
+  - Single method handles both capacity calculation and activation check
 
 ## [0.1.3] - 2026-04-21
 

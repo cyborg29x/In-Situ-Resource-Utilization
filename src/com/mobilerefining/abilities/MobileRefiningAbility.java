@@ -117,12 +117,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         CampaignFleetAPI fleet = getFleet();
         if (fleet == null) return false;
 
-        for (FleetMemberAPI member : fleet.getFleetData().getMembersListCopy()) {
-            if (member.getVariant().hasHullMod(HULLMOD_ID)) {
-                return true;
-            }
-        }
-        return false;
+        return getTotalRefiningCapacity(fleet) > 0f;
     }
 
     @Override
