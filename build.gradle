@@ -10,11 +10,11 @@ repositories {
 }
 
 dependencies {
-    implementation name: 'starfarer.api'
-    implementation name: 'starfarer_obf'
-    implementation name: 'fs.common_obf'
-    implementation name: 'json'
-    implementation name: 'log4j-1.2.9'
+    implementation ':starfarer.api'
+    implementation ':starfarer_obf'
+    implementation ':fs.common_obf'
+    implementation ':json'
+    implementation ':log4j-1.2.9'
 }
 
 java {

@@ -23,6 +23,7 @@ All notable changes to this mod will be documented in this file.
 - Build produces clean JAR with only compiled Java classes
 - Added .vscode/ folder with tasks.json and settings.json for VS Code development
   - Ctrl+Shift+B runs build task
+- Enabled Gradle configuration cache for faster repeat builds
 
 ## [0.1.4] - 2026-04-22
 
