@@ -76,8 +76,9 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         for (FleetMemberAPI member : fleet.getFleetData().getMembersListCopy()) {
             if (member.getVariant().hasHullMod(HULLMOD_ID)) {
                 float baseCargo = member.getHullSpec().getCargo();
-                float cargoCapacity = member.getStats().getCargoMod().computeEffective(baseCargo);
-                totalBudget += cargoCapacity * MobileRefiningPlugin.BUDGET_PERCENT;
+                float effectiveCargo = member.getStats().getCargoMod().computeEffective(baseCargo);
+                float compensatedCargo = effectiveCargo * MobileRefiningPlugin.CARGO_COMPENSATION_FACTOR;
+                totalBudget += compensatedCargo * MobileRefiningPlugin.BUDGET_PERCENT;
             }
         }
 

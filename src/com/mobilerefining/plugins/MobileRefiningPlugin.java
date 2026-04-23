@@ -10,9 +10,11 @@ public class MobileRefiningPlugin extends BaseModPlugin {
 
     public static float ORE_TO_METAL_RATIO = 3f;
     public static float BUDGET_PERCENT = 0.10f;
+    public static float CARGO_SPACE_TAKEN = 0.10f;
     public static final int ORE_PRICE = 10;
     public static final int METAL_PRICE = 30;
     public static final int HULLMOD_COST = 40;
+    public static final float CARGO_COMPENSATION_FACTOR = 1f / (1f - CARGO_SPACE_TAKEN);
 
     @Override
     public void onGameLoad(boolean newGame) {

@@ -2,6 +2,36 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.8] - 2026-04-23
+
+### Fixed
+- Hullmod tooltip spacing now matches vanilla standard
+  - Changed padding from 3f to 10f for consistent paragraph spacing
+  - Both addPara() calls now use opad = 10f
+- Removed empty gap between title and description
+  - Added shouldAddDescriptionToTooltip() override returning false
+  - Skips empty desc field from Hull_mods.csv
+  - Java now handles entire tooltip description
+
+## [0.1.7] - 2026-04-23
+
+### Changed
+- Hullmod now reduces ship's cargo capacity by 10%
+  - Equipment is installed into cargo space, reducing storage capacity
+  - Uses getCargoMod().modifyMult() to apply 0.90 multiplier
+- Processing budget calculation compensates for cargo reduction
+  - Reads effective cargo then divides by compensation factor (1 / 0.9 = 1.111...)
+  - Budget calculated from full cargo capacity regardless of cargo penalty
+- Hullmod description reworded for clarity:
+  - "Allows this ship to contribute %s of its cargo capacity as daily processing budget for mobile refining operations. As it is installed into the ship's cargo space, it reduces its cargo capacity by %s."
+- getDescriptionParam() now returns "10%" instead of "10"
+  - Percentage symbol included in Java code for proper tooltip highlighting
+
+### Technical
+- Added CARGO_SPACE_TAKEN constant (0.10)
+- Added CARGO_COMPENSATION_FACTOR computed as 1 / (1 - CARGO_SPACE_TAKEN)
+- Hullmod CSV description wrapped in double quotes to preserve commas
+
 ## [0.1.6] - 2026-04-22
 
 ### Changed
