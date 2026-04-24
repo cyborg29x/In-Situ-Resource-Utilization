@@ -1,7 +1,4 @@
 {
   "modId": "mobile_refining",
-  "oreToMetalRatio": 3,
-  "metalToSuppliesRatio": 3.3333333333333333,
-  "budgetPercent": 0.1,
-  "hullmodCost": 40
+  "budgetPercent": 0.1
 }

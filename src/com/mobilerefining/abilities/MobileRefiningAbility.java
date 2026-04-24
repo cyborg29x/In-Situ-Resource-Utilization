@@ -67,7 +67,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
         float supplyNeed = dailySupplyConsumption * days;
-        float metalNeededForSupplies = supplyNeed * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+        float metalNeededForSupplies = supplyNeed / MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
         float metalAvailable = availableMetals + metalFraction;
 
         logger.info("=== Supplies Production ===");
@@ -84,7 +84,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         logger.info("metalBudgetForSupplies: " + metalBudgetForSupplies + ", metalUsableForSupplies: " + metalUsableForSupplies);
 
         if (metalUsableForSupplies > 0) {
-            float suppliesProduced = metalUsableForSupplies / MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+            float suppliesProduced = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
             logger.info("suppliesProduced: " + suppliesProduced);
 
             float remainingMetals = metalFraction - metalUsableForSupplies;
@@ -121,7 +121,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             int oreToRemove = (int) maxOreToProcess;
             logger.info("Calling removeCommodity - ore, quantity: " + oreToRemove);
             cargo.removeCommodity("ore", oreToRemove);
-            float metalFromOre = oreToRemove / MobileRefiningPlugin.ORE_TO_METAL_RATIO;
+            float metalFromOre = oreToRemove * MobileRefiningPlugin.ORE_TO_METAL_RATIO;
             metalFraction += metalFromOre;
             oreFraction -= maxOreToProcess;
             logger.info("Metal produced from ore: " + metalFromOre + ", oreFraction after: " + oreFraction + ", metalFraction after: " + metalFraction);
@@ -242,13 +242,13 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 tooltip.addPara("Processing budget: %s credits/day", pad, highlight, String.format("%.1f", budget));
                 float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
                 float metalAvailableFromBudget = budget / MobileRefiningPlugin.METAL_PRICE;
-                float metalNeededForSupplies = dailySupplyConsumption * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+                float metalNeededForSupplies = dailySupplyConsumption / MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
                 float metalUsableForSupplies = Math.min(metalNeededForSupplies, metalAvailableFromBudget);
-                float suppliesPerDay = metalUsableForSupplies / MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+                float suppliesPerDay = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
                 float remainingBudget = budget - metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE;
                 if (remainingBudget < 0) remainingBudget = 0;
                 float maxOrePerDay = remainingBudget / MobileRefiningPlugin.ORE_PRICE;
-                float metalPerDay = maxOrePerDay / MobileRefiningPlugin.ORE_TO_METAL_RATIO;
+                float metalPerDay = maxOrePerDay * MobileRefiningPlugin.ORE_TO_METAL_RATIO;
                 tooltip.addPara("Supply demand: %s/day", pad, highlight, String.format("%.1f", dailySupplyConsumption));
                 tooltip.addPara("Max supplies from metal: %s/day", pad, highlight, String.format("%.1f", suppliesPerDay));
                 if (metalPerDay > 0) {

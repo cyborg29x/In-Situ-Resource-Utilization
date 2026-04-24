@@ -2,6 +2,16 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.9] - 2026-04-24
+
+- Refactored ratio calculations to use commodity base prices
+  - Prices now loaded programmatically via CommoditySpecAPI.getBasePrice()
+  - ORE_TO_METAL_RATIO = ORE_PRICE / METAL_PRICE (30/10 = 0.333...)
+  - METAL_TO_SUPPLIES_RATIO = METAL_PRICE / SUPPLIES_PRICE (30/100 = 0.3)
+  - Automatically adapts if commodity prices change in future patches or from mods
+- Removed unused HULLMOD_COST constant
+- Simplified settings.json (only budgetPercent remains configurable)
+
 ## [0.1.8] - 2026-04-23
 
 - Added metals to supplies conversion with automatic prioritization
