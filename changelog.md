@@ -4,6 +4,17 @@ All notable changes to this mod will be documented in this file.
 
 ## [0.1.8] - 2026-04-23
 
+- Added metals to supplies conversion with automatic prioritization
+  - Fleet's daily supply consumption calculated per-ship and prioritized first
+  - Metals converted to supplies before ore to metal processing
+  - Uses value-equivalent ratio: 10/3 metals = 1 supplies (100c value)
+- Updated tooltip to show supply demand and max supplies output
+- Added new constants: METAL_TO_SUPPLIES_RATIO, SUPPLIES_PRICE
+- Added suppliesFraction persistent tracking for integer-only operations
+- Refactored supplies and metal production using `addFractionToCargo()` helper method
+- Simplified supply consumption logic in `applyEffect()`
+- Removed redundant `totalMetalsAvailable` variable, now uses `metalAvailable` consistently
+
 ### Fixed
 - Hullmod tooltip spacing now matches vanilla standard
   - Changed padding from 3f to 10f for consistent paragraph spacing

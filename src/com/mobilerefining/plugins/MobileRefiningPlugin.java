@@ -9,10 +9,12 @@ public class MobileRefiningPlugin extends BaseModPlugin {
     public static final String ABILITY_ID = "mobile_refining";
 
     public static float ORE_TO_METAL_RATIO = 3f;
+    public static float METAL_TO_SUPPLIES_RATIO = 10f/3f;
     public static float BUDGET_PERCENT = 0.10f;
     public static float CARGO_SPACE_TAKEN = 0.10f;
     public static final int ORE_PRICE = 10;
     public static final int METAL_PRICE = 30;
+    public static final int SUPPLIES_PRICE = 100;
     public static final int HULLMOD_COST = 40;
     public static final float CARGO_COMPENSATION_FACTOR = 1f / (1f - CARGO_SPACE_TAKEN);
 
@@ -36,6 +38,7 @@ public class MobileRefiningPlugin extends BaseModPlugin {
         if (config != null) {
             ORE_TO_METAL_RATIO = (float) config.optDouble("oreToMetalRatio", ORE_TO_METAL_RATIO);
             BUDGET_PERCENT = (float) config.optDouble("budgetPercent", BUDGET_PERCENT);
+            METAL_TO_SUPPLIES_RATIO = (float) config.optDouble("metalToSuppliesRatio", METAL_TO_SUPPLIES_RATIO);
         }
     }
 
