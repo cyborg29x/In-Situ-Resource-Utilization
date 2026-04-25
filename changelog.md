@@ -11,6 +11,15 @@ All notable changes to this mod will be documented in this file.
   - Automatically adapts if commodity prices change in future patches or from mods
 - Removed unused HULLMOD_COST constant
 - Simplified settings.json (only budgetPercent remains configurable)
+- Made hullmod tooltip "10%" strings dynamic using CARGO_SPACE_TAKEN constant
+- Removed all logging from applyEffect() for performance
+  - Removed ~40 logger.info() statements in hot path
+  - Removed 3 logger.warn() null/zero checks
+  - Removed unused Logger import
+- Removed redundant cargo API calls
+  - Removed duplicate getCommodityQuantity("ore") call
+  - Removed unused getCommodityQuantity("metals") call (dead API call)
+- Changed ability tooltip padding to 10f and renamed variable to opad
 
 ## [0.1.8] - 2026-04-23
 
