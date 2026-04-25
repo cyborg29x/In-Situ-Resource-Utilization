@@ -2,6 +2,24 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.10] - 2026-04-25
+
+- Added transplutonics-to-supplies conversion pathway
+  - Second pathway uses transplutonics (rare_metals commodity) for supplies production
+  - Budget dynamically split between metals and transplutonics based on their relative value proportions
+  - Uses TRANSPLUTONICS_TO_SUPPLIES_RATIO = TRANSPLUTONICS_PRICE / SUPPLIES_PRICE (200/100 = 2.0)
+  - Added transient transplutonicsFraction persistent tracking
+- Fixed supplies production capping
+  - Total supplies now capped to actual fleet demand (supplyNeed)
+  - Inputs scaled proportionally when exceeding need
+- Fixed tooltip to show accurate availability
+  - Now checks actual cargo quantities before calculating potential supplies
+  - Shows 0 when no transplutonics in cargo
+- Fixed commodity ID
+  - Changed transplutonics commodity ID from "transplutonics" to "rare_metals"
+  - Prices now loaded via getCommoditySpec("rare_metals")
+- Added TRANSPLUTONICS_PRICE constant loaded programmatically
+
 ## [0.1.9] - 2026-04-24
 
 - Refactored ratio calculations to use commodity base prices

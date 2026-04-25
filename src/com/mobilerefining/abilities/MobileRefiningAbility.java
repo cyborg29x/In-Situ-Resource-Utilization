@@ -17,6 +17,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
     private static final String PERSISTENT_KEY_ORE_FRACTION = "MobileRefining_oreFraction";
     private static final String PERSISTENT_KEY_METAL_FRACTION = "MobileRefining_metalFraction";
     private static final String PERSISTENT_KEY_SUPPLIES_FRACTION = "MobileRefining_suppliesFraction";
+    private static final String PERSISTENT_KEY_TRANSPLUTONICS_FRACTION = "MobileRefining_transplutonicsFraction";
 
     @Override
     protected void activateImpl() {
@@ -42,46 +43,103 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         CargoAPI cargo = fleet.getCargo();
         float availableOre = cargo.getCommodityQuantity("ore");
         float availableMetals = cargo.getCommodityQuantity("metals");
+        float availableTransplutonics = cargo.getCommodityQuantity("rare_metals");
 
         Map<String, Object> persistentData = Global.getSector().getPersistentData();
         Float oreFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORE_FRACTION);
         Float metalFractionObj = (Float) persistentData.get(PERSISTENT_KEY_METAL_FRACTION);
         Float suppliesFractionObj = (Float) persistentData.get(PERSISTENT_KEY_SUPPLIES_FRACTION);
+        Float transplutonicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_TRANSPLUTONICS_FRACTION);
 
         float oreFraction = (oreFractionObj != null) ? oreFractionObj : 0f;
         float metalFraction = (metalFractionObj != null) ? metalFractionObj : 0f;
         float suppliesFraction = (suppliesFractionObj != null) ? suppliesFractionObj : 0f;
+        float transplutonicsFraction = (transplutonicsFractionObj != null) ? transplutonicsFractionObj : 0f;
 
         float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
         float supplyNeed = dailySupplyConsumption * days;
-        float metalNeededForSupplies = supplyNeed / MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
         float metalAvailable = availableMetals + metalFraction;
+        float transplutonicsAvailable = availableTransplutonics + transplutonicsFraction;
+
+        Global.getLogger(this.getClass()).info("DEBUG: availableMetals=" + availableMetals + " availableTransplutonics=" + availableTransplutonics + " metalFraction=" + metalFraction + " transplutonicsFraction=" + transplutonicsFraction);
+        Global.getLogger(this.getClass()).info("DEBUG: metalAvailable=" + metalAvailable + " transplutonicsAvailable=" + transplutonicsAvailable);
+
+        float metalValue = metalAvailable * MobileRefiningPlugin.METAL_PRICE;
+        float transplutonicsValue = transplutonicsAvailable * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
+        float totalValue = metalValue + transplutonicsValue;
 
         float supplyBudget = totalBudget * days;
-        float budgetNeededForSupplies = metalNeededForSupplies * MobileRefiningPlugin.METAL_PRICE;
-        boolean canAffordFullSupplies = supplyBudget >= budgetNeededForSupplies;
-        float metalBudgetForSupplies = canAffordFullSupplies ? metalNeededForSupplies : (supplyBudget / MobileRefiningPlugin.METAL_PRICE);
-        float metalUsableForSupplies = Math.min(metalAvailable, metalBudgetForSupplies);
 
-        if (metalUsableForSupplies > 0) {
-            float suppliesProduced = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+        Global.getLogger(this.getClass()).info("DEBUG: metalValue=" + metalValue + " transplutonicsValue=" + transplutonicsValue + " totalValue=" + totalValue + " supplyBudget=" + supplyBudget);
 
-            float remainingMetals = metalFraction - metalUsableForSupplies;
-            if (remainingMetals >= 0) {
-                metalFraction = remainingMetals;
+        float metalUsableForSupplies = 0f;
+        float transplutonicsUsableForSupplies = 0f;
+
+        if (supplyNeed > 0 && totalValue > 0) {
+            float metalBudgetShare;
+            float transplutonicsBudgetShare;
+
+            if (metalValue > 0 && transplutonicsValue > 0) {
+                metalBudgetShare = supplyBudget * (metalValue / totalValue);
+                transplutonicsBudgetShare = supplyBudget * (transplutonicsValue / totalValue);
+            } else if (metalValue > 0) {
+                metalBudgetShare = supplyBudget;
+                transplutonicsBudgetShare = 0f;
             } else {
-                float metalToRemove = Math.min(availableMetals, -remainingMetals);
+                metalBudgetShare = 0f;
+                transplutonicsBudgetShare = supplyBudget;
+            }
+
+            float metalBudgetForSupplies = Math.min(metalBudgetShare, supplyBudget);
+            float transplutonicsBudgetForSupplies = Math.min(transplutonicsBudgetShare, supplyBudget - metalBudgetForSupplies);
+
+            metalUsableForSupplies = Math.min(metalAvailable, metalBudgetForSupplies / MobileRefiningPlugin.METAL_PRICE);
+            transplutonicsUsableForSupplies = Math.min(transplutonicsAvailable, transplutonicsBudgetForSupplies / MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
+            Global.getLogger(this.getClass()).info("DEBUG: metalBudgetForSupplies=" + metalBudgetForSupplies + " transplutonicsBudgetForSupplies=" + transplutonicsBudgetForSupplies);
+            Global.getLogger(this.getClass()).info("DEBUG: metalUsableForSupplies=" + metalUsableForSupplies + " transplutonicsUsableForSupplies=" + transplutonicsUsableForSupplies);
+        }
+
+        float suppliesFromMetals = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+        float suppliesFromTransplutonics = transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO;
+        float totalSuppliesProduced = suppliesFromMetals + suppliesFromTransplutonics;
+
+        if (totalSuppliesProduced > supplyNeed && supplyNeed > 0) {
+            float scaleFactor = supplyNeed / totalSuppliesProduced;
+            metalUsableForSupplies *= scaleFactor;
+            transplutonicsUsableForSupplies *= scaleFactor;
+            suppliesFromMetals = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+            suppliesFromTransplutonics = transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO;
+            totalSuppliesProduced = supplyNeed;
+        }
+
+        if (totalSuppliesProduced > 0) {
+            float remainingMetal = metalFraction - metalUsableForSupplies;
+            if (remainingMetal >= 0) {
+                metalFraction = remainingMetal;
+            } else {
+                float metalToRemove = Math.min(availableMetals, -remainingMetal);
                 if (metalToRemove >= 1f) {
                     cargo.removeCommodity("metals", (int) metalToRemove);
                 }
-                metalFraction = remainingMetals + (int) metalToRemove;
+                metalFraction = remainingMetal + (int) metalToRemove;
             }
 
-            suppliesFraction += suppliesProduced;
+            float remainingTransplutonics = transplutonicsFraction - transplutonicsUsableForSupplies;
+            if (remainingTransplutonics >= 0) {
+                transplutonicsFraction = remainingTransplutonics;
+            } else {
+                float transplutonicsToRemove = Math.min(availableTransplutonics, -remainingTransplutonics);
+                if (transplutonicsToRemove >= 1f) {
+                    cargo.removeCommodity("rare_metals", (int) transplutonicsToRemove);
+                }
+                transplutonicsFraction = remainingTransplutonics + (int) transplutonicsToRemove;
+            }
+
+            suppliesFraction += totalSuppliesProduced;
             suppliesFraction = addFractionToCargo(cargo, "supplies", suppliesFraction, cargo.getSpaceLeft());
         }
 
-        float remainingBudget = totalBudget * days - (metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE);
+        float remainingBudget = totalBudget * days - (metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE + transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
 
         if (remainingBudget > 0 && availableOre > 0) {
             float newOreFraction = remainingBudget / MobileRefiningPlugin.ORE_PRICE;
@@ -104,6 +162,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         persistentData.put(PERSISTENT_KEY_ORE_FRACTION, oreFraction);
         persistentData.put(PERSISTENT_KEY_METAL_FRACTION, metalFraction);
         persistentData.put(PERSISTENT_KEY_SUPPLIES_FRACTION, suppliesFraction);
+        persistentData.put(PERSISTENT_KEY_TRANSPLUTONICS_FRACTION, transplutonicsFraction);
     }
 
     private float calculateDailySupplyConsumption(CampaignFleetAPI fleet) {
@@ -200,16 +259,67 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             if (budget > 0) {
                 tooltip.addPara("Processing budget: %s credits/day", opad, highlight, String.format("%.1f", budget));
                 float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
-                float metalAvailableFromBudget = budget / MobileRefiningPlugin.METAL_PRICE;
-                float metalNeededForSupplies = dailySupplyConsumption / MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
-                float metalUsableForSupplies = Math.min(metalNeededForSupplies, metalAvailableFromBudget);
-                float suppliesPerDay = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
-                float remainingBudget = budget - metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE;
+
+                CargoAPI cargo = fleet.getCargo();
+                float availableMetals = cargo.getCommodityQuantity("metals");
+float availableTransplutonics = cargo.getCommodityQuantity("rare_metals");
+
+                Map<String, Object> persistentData = Global.getSector().getPersistentData();
+                Float metalFractionObj = (Float) persistentData.get(PERSISTENT_KEY_METAL_FRACTION);
+                Float transplutonicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_TRANSPLUTONICS_FRACTION);
+                float metalFraction = (metalFractionObj != null) ? metalFractionObj : 0f;
+                float transplutonicsFraction = (transplutonicsFractionObj != null) ? transplutonicsFractionObj : 0f;
+
+                float metalAvailable = availableMetals + metalFraction;
+                float transplutonicsAvailable = availableTransplutonics + transplutonicsFraction;
+
+                Global.getLogger(this.getClass()).info("DEBUG TOOLTIP: availableMetals=" + availableMetals + " availableTransplutonics=" + availableTransplutonics + " metalFraction=" + metalFraction + " transplutonicsFraction=" + transplutonicsFraction);
+
+                float metalValue = metalAvailable * MobileRefiningPlugin.METAL_PRICE;
+                float transplutonicsValue = transplutonicsAvailable * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
+                float totalValue = metalValue + transplutonicsValue;
+
+                Global.getLogger(this.getClass()).info("DEBUG TOOLTIP: metalValue=" + metalValue + " transplutonicsValue=" + transplutonicsValue + " totalValue=" + totalValue + " budget=" + budget);
+
+                float metalUsableForSupplies = 0f;
+                float transplutonicsUsableForSupplies = 0f;
+
+                if (totalValue > 0) {
+                    float supplyBudget = budget;
+                    float metalBudgetShare;
+                    float transplutonicsBudgetShare;
+
+                    if (metalValue > 0 && transplutonicsValue > 0) {
+                        metalBudgetShare = supplyBudget * (metalValue / totalValue);
+                        transplutonicsBudgetShare = supplyBudget * (transplutonicsValue / totalValue);
+                    } else if (metalValue > 0) {
+                        metalBudgetShare = supplyBudget;
+                        transplutonicsBudgetShare = 0f;
+                    } else {
+                        metalBudgetShare = 0f;
+                        transplutonicsBudgetShare = supplyBudget;
+                    }
+
+                    float metalBudgetForSupplies = Math.min(metalBudgetShare, supplyBudget);
+                    float transplutonicsBudgetForSupplies = Math.min(transplutonicsBudgetShare, supplyBudget - metalBudgetForSupplies);
+
+                    metalUsableForSupplies = Math.min(metalAvailable, metalBudgetForSupplies / MobileRefiningPlugin.METAL_PRICE);
+                    transplutonicsUsableForSupplies = Math.min(transplutonicsAvailable, transplutonicsBudgetForSupplies / MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
+                    Global.getLogger(this.getClass()).info("DEBUG TOOLTIP: metalBudgetForSupplies=" + metalBudgetForSupplies + " transplutonicsBudgetForSupplies=" + transplutonicsBudgetForSupplies);
+                    Global.getLogger(this.getClass()).info("DEBUG TOOLTIP: metalUsableForSupplies=" + metalUsableForSupplies + " transplutonicsUsableForSupplies=" + transplutonicsUsableForSupplies);
+                }
+
+                float suppliesFromMetal = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+                float suppliesFromTransplutonics = transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO;
+
+                float remainingBudget = budget - metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE - transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
                 if (remainingBudget < 0) remainingBudget = 0;
                 float maxOrePerDay = remainingBudget / MobileRefiningPlugin.ORE_PRICE;
                 float metalPerDay = maxOrePerDay * MobileRefiningPlugin.ORE_TO_METAL_RATIO;
+
                 tooltip.addPara("Supply demand: %s/day", opad, highlight, String.format("%.1f", dailySupplyConsumption));
-                tooltip.addPara("Max supplies from metal: %s/day", opad, highlight, String.format("%.1f", suppliesPerDay));
+                tooltip.addPara("Max supplies from metal: %s/day", opad, highlight, String.format("%.1f", suppliesFromMetal));
+                tooltip.addPara("Max supplies from transplutonics: %s/day", opad, highlight, String.format("%.1f", suppliesFromTransplutonics));
                 if (metalPerDay > 0) {
                     tooltip.addPara("Max ore processed: %s/day", opad, highlight, String.format("%.1f", maxOrePerDay));
                     tooltip.addPara("Max metal output: %s/day", opad, highlight, String.format("%.1f", metalPerDay));
