@@ -13,9 +13,11 @@ public class MobileRefiningPlugin extends BaseModPlugin {
     public static int METAL_PRICE = 30;
     public static int SUPPLIES_PRICE = 100;
     public static int TRANSPLUTONICS_PRICE = 200;
+    public static int TRANSPLUTONIC_ORE_PRICE = 75;
     public static float ORE_TO_METAL_RATIO = (float) ORE_PRICE / METAL_PRICE;
     public static float METAL_TO_SUPPLIES_RATIO = (float) METAL_PRICE / SUPPLIES_PRICE;
     public static float TRANSPLUTONICS_TO_SUPPLIES_RATIO = (float) TRANSPLUTONICS_PRICE / SUPPLIES_PRICE;
+    public static float TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO;
     public static float BUDGET_PERCENT = 0.10f;
     public static float CARGO_SPACE_TAKEN = 0.10f;
     public static final float CARGO_COMPENSATION_FACTOR = 1f / (1f - CARGO_SPACE_TAKEN);
@@ -40,6 +42,7 @@ public class MobileRefiningPlugin extends BaseModPlugin {
         CommoditySpecAPI metalSpec = Global.getSettings().getCommoditySpec("metals");
         CommoditySpecAPI suppliesSpec = Global.getSettings().getCommoditySpec("supplies");
         CommoditySpecAPI transplutonicsSpec = Global.getSettings().getCommoditySpec("rare_metals");
+        CommoditySpecAPI transplutonicOreSpec = Global.getSettings().getCommoditySpec("rare_ore");
 
         if (oreSpec != null) {
             ORE_PRICE = (int) oreSpec.getBasePrice();
@@ -53,10 +56,14 @@ public class MobileRefiningPlugin extends BaseModPlugin {
         if (transplutonicsSpec != null) {
             TRANSPLUTONICS_PRICE = (int) transplutonicsSpec.getBasePrice();
         }
+        if (transplutonicOreSpec != null) {
+            TRANSPLUTONIC_ORE_PRICE = (int) transplutonicOreSpec.getBasePrice();
+        }
 
         ORE_TO_METAL_RATIO = (float) ORE_PRICE / METAL_PRICE;
         METAL_TO_SUPPLIES_RATIO = (float) METAL_PRICE / SUPPLIES_PRICE;
         TRANSPLUTONICS_TO_SUPPLIES_RATIO = (float) TRANSPLUTONICS_PRICE / SUPPLIES_PRICE;
+        TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO = (float) TRANSPLUTONIC_ORE_PRICE / TRANSPLUTONICS_PRICE;
     }
 
     private void loadConfig() throws Exception {

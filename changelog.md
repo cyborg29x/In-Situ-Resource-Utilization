@@ -2,6 +2,22 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.11] - 2026-04-26
+
+- Added transplutonic ore to transplutonics conversion pathway
+  - Third pathway uses transplutonic ore (rare_ore commodity) for transplutonics production
+  - Budget dynamically allocated after metals/transplutonics replenishment
+  - Uses TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO = TRANSPLUTONIC_ORE_PRICE / TRANSPLUTONICS_PRICE (programmatically calculated)
+  - Added transient transplutonicOreFraction persistent tracking
+- Redesigned budget allocation for metals and transplutonics
+  - Remaining budget after supply production now replenishes consumed materials proportionally
+  - Replenishment ratio based on value spent (e.g., if 60% of value from metals, 60% of remaining budget buys metals)
+  - Ensures sustainable material consumption over time
+- Updated tooltip to show transplutonic ore processing rates
+  - Added "Max transplutonic ore processed" and "Max transplutonics output" display lines
+  - Updated ability description to mention transplutonic ore conversion
+- Added TRANSPLUTONIC_ORE_PRICE constant loaded programmatically
+
 ## [0.1.10] - 2026-04-25
 
 - Added transplutonics-to-supplies conversion pathway
