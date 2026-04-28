@@ -2,6 +2,17 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.12] - 2026-04-27
+
+- Added organics to domestic goods conversion pathway
+  - Fourth pathway converts organics to domestic goods using remaining budget
+  - Runs after all other conversions (ore→metal, transplutonic ore→transplutonics)
+  - Uses ORGANICS_TO_DOMESTIC_GOODS_RATIO = ORGANICS_PRICE / DOMESTIC_GOODS_PRICE (30/50 = 0.6)
+  - Added transient organicsFraction and domesticGoodsFraction persistent tracking
+- Updated tooltip to show organics processing rates
+  - Added "Max organics processed" and "Max domestic goods output" display lines
+- Added ORGANICS_PRICE and DOMESTIC_GOODS_PRICE constants loaded programmatically
+
 ## [0.1.11] - 2026-04-26
 
 - Added transplutonic ore to transplutonics conversion pathway

@@ -18,6 +18,9 @@ public class MobileRefiningPlugin extends BaseModPlugin {
     public static float METAL_TO_SUPPLIES_RATIO = (float) METAL_PRICE / SUPPLIES_PRICE;
     public static float TRANSPLUTONICS_TO_SUPPLIES_RATIO = (float) TRANSPLUTONICS_PRICE / SUPPLIES_PRICE;
     public static float TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO;
+    public static int ORGANICS_PRICE = 30;
+    public static int DOMESTIC_GOODS_PRICE = 50;
+    public static float ORGANICS_TO_DOMESTIC_GOODS_RATIO;
     public static float BUDGET_PERCENT = 0.10f;
     public static float CARGO_SPACE_TAKEN = 0.10f;
     public static final float CARGO_COMPENSATION_FACTOR = 1f / (1f - CARGO_SPACE_TAKEN);
@@ -43,6 +46,8 @@ public class MobileRefiningPlugin extends BaseModPlugin {
         CommoditySpecAPI suppliesSpec = Global.getSettings().getCommoditySpec("supplies");
         CommoditySpecAPI transplutonicsSpec = Global.getSettings().getCommoditySpec("rare_metals");
         CommoditySpecAPI transplutonicOreSpec = Global.getSettings().getCommoditySpec("rare_ore");
+        CommoditySpecAPI organicsSpec = Global.getSettings().getCommoditySpec("organics");
+        CommoditySpecAPI domesticGoodsSpec = Global.getSettings().getCommoditySpec("domestic_goods");
 
         if (oreSpec != null) {
             ORE_PRICE = (int) oreSpec.getBasePrice();
@@ -59,11 +64,18 @@ public class MobileRefiningPlugin extends BaseModPlugin {
         if (transplutonicOreSpec != null) {
             TRANSPLUTONIC_ORE_PRICE = (int) transplutonicOreSpec.getBasePrice();
         }
+        if (organicsSpec != null) {
+            ORGANICS_PRICE = (int) organicsSpec.getBasePrice();
+        }
+        if (domesticGoodsSpec != null) {
+            DOMESTIC_GOODS_PRICE = (int) domesticGoodsSpec.getBasePrice();
+        }
 
         ORE_TO_METAL_RATIO = (float) ORE_PRICE / METAL_PRICE;
         METAL_TO_SUPPLIES_RATIO = (float) METAL_PRICE / SUPPLIES_PRICE;
         TRANSPLUTONICS_TO_SUPPLIES_RATIO = (float) TRANSPLUTONICS_PRICE / SUPPLIES_PRICE;
         TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO = (float) TRANSPLUTONIC_ORE_PRICE / TRANSPLUTONICS_PRICE;
+        ORGANICS_TO_DOMESTIC_GOODS_RATIO = (float) ORGANICS_PRICE / DOMESTIC_GOODS_PRICE;
     }
 
     private void loadConfig() throws Exception {
