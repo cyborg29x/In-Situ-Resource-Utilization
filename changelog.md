@@ -2,6 +2,17 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.14] - 2026-04-30
+
+- Changed fuel cap calculation to use max(80%, fuel cap - 500)
+  - Updated maxAllowedFuel to use Math.max(maxFuel * 0.8f, maxFuel - 500f)
+- Added military ship deployment supply cost to supply production
+  - Created calculateMilitaryShipDeploymentSupplyCost() function
+  - Uses !isCivilian() to detect military/combat ships
+  - Uses getModifiedValue() to account for hullmod modifiers (e.g., D-mods)
+  - Only adds deployment cost not already covered by existing supplies
+  - Updated tooltip to show deployment cost separately: "Supply demand: X/day (+ Y deployment)"
+
 ## [0.1.13] - 2026-04-28
 
 - Added volatiles to fuel conversion pathway

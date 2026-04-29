@@ -83,7 +83,7 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
 
             float currentFuel = cargo.getFuel();
             float maxFuel = cargo.getMaxFuel();
-            float maxAllowedFuel = maxFuel * 0.8f;
+            float maxAllowedFuel = Math.max(maxFuel * 0.8f, maxFuel - 500f);
             float fuelSpace = maxAllowedFuel - currentFuel;
             if (fuelSpace < 0) fuelSpace = 0;
 
@@ -121,7 +121,10 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
         float remainingCredits = totalCredits - valueSpentOnVolatiles;
 
         float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
-        float supplyNeed = dailySupplyConsumption * days;
+        float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
+        float currentSupplies = cargo.getSupplies();
+        float deploymentCostNeeded = Math.max(0, militaryDeploymentCost - currentSupplies);
+        float supplyNeed = (dailySupplyConsumption * days) + deploymentCostNeeded;
         float metalAvailable = availableMetals + metalFraction;
         float transplutonicsAvailable = availableTransplutonics + transplutonicsFraction;
 
@@ -304,6 +307,16 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
             totalSupplies += member.getStats().getSuppliesPerMonth().getModifiedValue() / 30f;
         }
         return totalSupplies;
+    }
+
+    private float calculateMilitaryShipDeploymentSupplyCost(CampaignFleetAPI fleet) {
+        float totalDeploymentCost = 0f;
+        for (FleetMemberAPI member : fleet.getFleetData().getMembersListCopy()) {
+            if (!member.getVariant().isCivilian()) {
+                totalDeploymentCost += member.getStats().getSuppliesToRecover().getModifiedValue();
+            }
+        }
+        return totalDeploymentCost;
     }
 
     private float addFractionToCargo(CargoAPI cargo, String commodity, float fraction, float maxQuantityToAdd) {
@@ -500,7 +513,8 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
                 float maxOrganicsPerDay = remainingBudgetAfterVolatiles / MobileRefiningPlugin.ORGANICS_PRICE;
                 float domesticGoodsPerDay = maxOrganicsPerDay * MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO;
 
-                tooltip.addPara("Supply demand: %s/day", opad, highlight, String.format("%.1f", dailySupplyConsumption));
+                float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
+                tooltip.addPara("Supply demand: %s/day (+ %s deployment)", opad, highlight, String.format("%.1f", dailySupplyConsumption), String.format("%.1f", militaryDeploymentCost));
                 tooltip.addPara("Max supplies from metal: %s/day", opad, highlight, String.format("%.1f", suppliesFromMetal));
                 tooltip.addPara("Max supplies from transplutonics: %s/day", opad, highlight, String.format("%.1f", suppliesFromTransplutonics));
                 if (availableOre > 0 && metalPerDay > 0) {
