@@ -2,6 +2,33 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.13] - 2026-04-28
+
+- Added volatiles to fuel conversion pathway
+  - Runs before all other conversions (supply production, ore→metal, etc.)
+  - Only activates when fleet is in hyperspace and actively consuming fuel
+  - Stops when fleet fuel reaches 80% of max capacity
+  - Uses VOLATILES_TO_FUEL_RATIO = VOLATILES_PRICE / FUEL_PRICE (250/25 = 10)
+  - Added transient volatilesFraction and fuelFraction persistent tracking
+  - Added addFuelToCargo() helper method for fuel-specific cargo operations
+- Updated tooltip to show volatiles/fuel processing rates
+  - Added "Max volatiles processed" and "Max fuel output (80% cap)" display lines
+  - Only shows fuel stats when fleet is in hyperspace
+- Added VOLATILES_PRICE and FUEL_PRICE constants loaded programmatically
+- Fixed fuel not being produced
+  - Removed minimum 1-unit threshold for processing volatiles
+  - Removed minimum 1-unit threshold for adding fuel to cargo
+  - Fractions now accumulate until reaching integer threshold
+- Fixed fuel production unbounded by budget
+  - Volatiles purchased now based on fuel value, not total budget
+  - Processing capped by available budget (totalCredits)
+- Fixed volatiles not being consumed from cargo
+   - Volatiles from cargo now always removed (integer portion)
+   - Fraction tracking properly decremented when using purchased volatiles
+- Simplified volatiles processing logic
+   - Merged volatilesToSpend and volatilesToProcess into single calculation
+   - volatilesFraction now only decreases (removed surplus tracking)
+
 ## [0.1.12] - 2026-04-27
 
 - Added organics to domestic goods conversion pathway

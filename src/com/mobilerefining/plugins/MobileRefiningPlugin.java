@@ -21,6 +21,9 @@ public class MobileRefiningPlugin extends BaseModPlugin {
     public static int ORGANICS_PRICE = 30;
     public static int DOMESTIC_GOODS_PRICE = 50;
     public static float ORGANICS_TO_DOMESTIC_GOODS_RATIO;
+    public static int VOLATILES_PRICE = 250;
+    public static int FUEL_PRICE = 25;
+    public static float VOLATILES_TO_FUEL_RATIO;
     public static float BUDGET_PERCENT = 0.10f;
     public static float CARGO_SPACE_TAKEN = 0.10f;
     public static final float CARGO_COMPENSATION_FACTOR = 1f / (1f - CARGO_SPACE_TAKEN);
@@ -48,6 +51,8 @@ public class MobileRefiningPlugin extends BaseModPlugin {
         CommoditySpecAPI transplutonicOreSpec = Global.getSettings().getCommoditySpec("rare_ore");
         CommoditySpecAPI organicsSpec = Global.getSettings().getCommoditySpec("organics");
         CommoditySpecAPI domesticGoodsSpec = Global.getSettings().getCommoditySpec("domestic_goods");
+        CommoditySpecAPI volatilesSpec = Global.getSettings().getCommoditySpec("volatiles");
+        CommoditySpecAPI fuelSpec = Global.getSettings().getCommoditySpec("fuel");
 
         if (oreSpec != null) {
             ORE_PRICE = (int) oreSpec.getBasePrice();
@@ -70,12 +75,19 @@ public class MobileRefiningPlugin extends BaseModPlugin {
         if (domesticGoodsSpec != null) {
             DOMESTIC_GOODS_PRICE = (int) domesticGoodsSpec.getBasePrice();
         }
+        if (volatilesSpec != null) {
+            VOLATILES_PRICE = (int) volatilesSpec.getBasePrice();
+        }
+        if (fuelSpec != null) {
+            FUEL_PRICE = (int) fuelSpec.getBasePrice();
+        }
 
         ORE_TO_METAL_RATIO = (float) ORE_PRICE / METAL_PRICE;
         METAL_TO_SUPPLIES_RATIO = (float) METAL_PRICE / SUPPLIES_PRICE;
         TRANSPLUTONICS_TO_SUPPLIES_RATIO = (float) TRANSPLUTONICS_PRICE / SUPPLIES_PRICE;
         TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO = (float) TRANSPLUTONIC_ORE_PRICE / TRANSPLUTONICS_PRICE;
         ORGANICS_TO_DOMESTIC_GOODS_RATIO = (float) ORGANICS_PRICE / DOMESTIC_GOODS_PRICE;
+        VOLATILES_TO_FUEL_RATIO = (float) VOLATILES_PRICE / FUEL_PRICE;
     }
 
     private void loadConfig() throws Exception {

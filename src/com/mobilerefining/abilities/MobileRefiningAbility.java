@@ -21,6 +21,8 @@ public class MobileRefiningAbility extends BaseToggleAbility {
     private static final String PERSISTENT_KEY_TRANSPLUTONIC_ORE_FRACTION = "MobileRefining_transplutonicOreFraction";
     private static final String PERSISTENT_KEY_ORGANICS_FRACTION = "MobileRefining_organicsFraction";
     private static final String PERSISTENT_KEY_DOMESTIC_GOODS_FRACTION = "MobileRefining_domesticGoodsFraction";
+    private static final String PERSISTENT_KEY_VOLATILES_FRACTION = "MobileRefining_volatilesFraction";
+    private static final String PERSISTENT_KEY_FUEL_FRACTION = "MobileRefining_fuelFraction";
 
     @Override
     protected void activateImpl() {
@@ -50,6 +52,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         float availableTransplutonicOre = cargo.getCommodityQuantity("rare_ore");
         float availableOrganics = cargo.getCommodityQuantity("organics");
         float availableDomesticGoods = cargo.getCommodityQuantity("domestic_goods");
+        float availableVolatiles = cargo.getCommodityQuantity("volatiles");
 
         Map<String, Object> persistentData = Global.getSector().getPersistentData();
         Float oreFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORE_FRACTION);
@@ -57,9 +60,10 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         Float suppliesFractionObj = (Float) persistentData.get(PERSISTENT_KEY_SUPPLIES_FRACTION);
         Float transplutonicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_TRANSPLUTONICS_FRACTION);
         Float transplutonicOreFractionObj = (Float) persistentData.get(PERSISTENT_KEY_TRANSPLUTONIC_ORE_FRACTION);
-        Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_FRACTION);
+Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_FRACTION);
         Float domesticGoodsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_DOMESTIC_GOODS_FRACTION);
-
+        Float volatilesFractionObj = (Float) persistentData.get(PERSISTENT_KEY_VOLATILES_FRACTION);
+        Float fuelFractionObj = (Float) persistentData.get(PERSISTENT_KEY_FUEL_FRACTION);
         float oreFraction = (oreFractionObj != null) ? oreFractionObj : 0f;
         float metalFraction = (metalFractionObj != null) ? metalFractionObj : 0f;
         float suppliesFraction = (suppliesFractionObj != null) ? suppliesFractionObj : 0f;
@@ -67,23 +71,65 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         float transplutonicOreFraction = (transplutonicOreFractionObj != null) ? transplutonicOreFractionObj : 0f;
         float organicsFraction = (organicsFractionObj != null) ? organicsFractionObj : 0f;
         float domesticGoodsFraction = (domesticGoodsFractionObj != null) ? domesticGoodsFractionObj : 0f;
+        float volatilesFraction = (volatilesFractionObj != null) ? volatilesFractionObj : 0f;
+        float fuelFraction = (fuelFractionObj != null) ? fuelFractionObj : 0f;
+
+        float totalCredits = totalBudget * days;
+        float valueSpentOnVolatiles = 0f;
+
+        if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f && totalCredits > 0) {
+            float dailyFuelConsumption = Misc.getFuelPerDay(fleet, fleet.getCurrBurnLevel());
+            float fuelNeeded = dailyFuelConsumption * days;
+
+            float currentFuel = cargo.getFuel();
+            float maxFuel = cargo.getMaxFuel();
+            float maxAllowedFuel = maxFuel * 0.8f;
+            float fuelSpace = maxAllowedFuel - currentFuel;
+            if (fuelSpace < 0) fuelSpace = 0;
+
+            float fuelToProduce = Math.min(fuelNeeded, fuelSpace);
+
+            if (fuelToProduce > 0) {
+                float volatilesRequired = fuelToProduce / MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
+
+                float fuelValue = fuelToProduce * MobileRefiningPlugin.FUEL_PRICE;
+                float maxVolatilesAffordable = fuelValue / MobileRefiningPlugin.VOLATILES_PRICE;
+                float maxVolatilesWithBudget = totalCredits / MobileRefiningPlugin.VOLATILES_PRICE;
+                float volatilesToProcess = Math.min(volatilesRequired, Math.min(maxVolatilesAffordable, maxVolatilesWithBudget));
+
+                volatilesFraction -= volatilesToProcess;
+                float volatilesToRemove = 0f;
+                if (volatilesFraction < 0) {
+                    volatilesToRemove = Math.min(availableVolatiles, -volatilesFraction);
+                    if (volatilesToRemove >= 1f) {
+                        cargo.removeCommodity("volatiles", (int) volatilesToRemove);
+                    }
+                    volatilesFraction += (int) volatilesToRemove;
+                }
+
+                float fuelFromVolatiles = volatilesToProcess * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
+                fuelFraction += fuelFromVolatiles;
+                fuelFraction = addFuelToCargo(cargo, fuelFraction);
+
+                valueSpentOnVolatiles = volatilesToProcess * MobileRefiningPlugin.VOLATILES_PRICE;
+                Global.getLogger(this.getClass()).info("DEBUG: volatilesFraction=" + volatilesFraction + " volatilesToProcess=" + volatilesToProcess + " volatilesToRemove=" + volatilesToRemove + " fuelFromVolatiles=" + fuelFromVolatiles);
+            } else {
+                valueSpentOnVolatiles = 0;
+            }
+        }
+
+        float remainingCredits = totalCredits - valueSpentOnVolatiles;
 
         float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
         float supplyNeed = dailySupplyConsumption * days;
         float metalAvailable = availableMetals + metalFraction;
         float transplutonicsAvailable = availableTransplutonics + transplutonicsFraction;
 
-        Global.getLogger(this.getClass()).info("DEBUG: availableMetals=" + availableMetals + " availableTransplutonics=" + availableTransplutonics + " metalFraction=" + metalFraction + " transplutonicsFraction=" + transplutonicsFraction);
-        Global.getLogger(this.getClass()).info("DEBUG: metalAvailable=" + metalAvailable + " transplutonicsAvailable=" + transplutonicsAvailable);
-        Global.getLogger(this.getClass()).info("DEBUG: availableTransplutonicOre=" + availableTransplutonicOre + " transplutonicOreFraction=" + transplutonicOreFraction);
-
         float metalValue = metalAvailable * MobileRefiningPlugin.METAL_PRICE;
         float transplutonicsValue = transplutonicsAvailable * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
         float totalValue = metalValue + transplutonicsValue;
 
-        float supplyBudget = totalBudget * days;
-
-        Global.getLogger(this.getClass()).info("DEBUG: metalValue=" + metalValue + " transplutonicsValue=" + transplutonicsValue + " totalValue=" + totalValue + " supplyBudget=" + supplyBudget);
+        float supplyBudget = remainingCredits;
 
         float metalUsableForSupplies = 0f;
         float transplutonicsUsableForSupplies = 0f;
@@ -110,8 +156,6 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
             metalUsableForSupplies = Math.min(metalAvailable, metalBudgetForSupplies / MobileRefiningPlugin.METAL_PRICE);
             transplutonicsUsableForSupplies = Math.min(transplutonicsAvailable, transplutonicsBudgetForSupplies / MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
-            Global.getLogger(this.getClass()).info("DEBUG: metalBudgetForSupplies=" + metalBudgetForSupplies + " transplutonicsBudgetForSupplies=" + transplutonicsBudgetForSupplies);
-            Global.getLogger(this.getClass()).info("DEBUG: metalUsableForSupplies=" + metalUsableForSupplies + " transplutonicsUsableForSupplies=" + transplutonicsUsableForSupplies);
 
             metalValueSpent = metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE;
             transplutonicsValueSpent = transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
@@ -161,7 +205,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         }
 
         float totalValueSpent = metalValueSpent + transplutonicsValueSpent;
-        float remainingBudget = (totalBudget * days) - totalValueSpent;
+        float remainingBudget = remainingCredits - totalValueSpent;
 
         if (remainingBudget > 0 && totalValueSpent > 0) {
             float metalRatio = metalValueSpent / totalValueSpent;
@@ -250,6 +294,8 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         persistentData.put(PERSISTENT_KEY_TRANSPLUTONIC_ORE_FRACTION, transplutonicOreFraction);
         persistentData.put(PERSISTENT_KEY_ORGANICS_FRACTION, organicsFraction);
         persistentData.put(PERSISTENT_KEY_DOMESTIC_GOODS_FRACTION, domesticGoodsFraction);
+        persistentData.put(PERSISTENT_KEY_VOLATILES_FRACTION, volatilesFraction);
+        persistentData.put(PERSISTENT_KEY_FUEL_FRACTION, fuelFraction);
     }
 
     private float calculateDailySupplyConsumption(CampaignFleetAPI fleet) {
@@ -266,6 +312,18 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             int quantity = (int) quantityToAdd;
             cargo.addCommodity(commodity, quantity);
             return fraction - quantity;
+        }
+        return fraction;
+    }
+
+    private float addFuelToCargo(CargoAPI cargo, float fraction) {
+        float quantityToAdd = Math.min(fraction, cargo.getMaxFuel() - cargo.getFuel());
+        if (quantityToAdd > 0) {
+            int quantity = (int) quantityToAdd;
+            if (quantity >= 1f) {
+                cargo.addFuel(quantity);
+                return fraction - quantity;
+            }
         }
         return fraction;
     }
@@ -354,6 +412,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 float availableTransplutonicOre = cargo.getCommodityQuantity("rare_ore");
                 float availableOrganics = cargo.getCommodityQuantity("organics");
                 float availableDomesticGoods = cargo.getCommodityQuantity("domestic_goods");
+                float availableVolatiles = cargo.getCommodityQuantity("volatiles");
 
                 Map<String, Object> persistentData = Global.getSector().getPersistentData();
                 Float metalFractionObj = (Float) persistentData.get(PERSISTENT_KEY_METAL_FRACTION);
@@ -361,11 +420,15 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 Float transplutonicOreFractionObj = (Float) persistentData.get(PERSISTENT_KEY_TRANSPLUTONIC_ORE_FRACTION);
                 Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_FRACTION);
                 Float domesticGoodsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_DOMESTIC_GOODS_FRACTION);
+                Float volatilesFractionObj = (Float) persistentData.get(PERSISTENT_KEY_VOLATILES_FRACTION);
+                Float fuelFractionObj = (Float) persistentData.get(PERSISTENT_KEY_FUEL_FRACTION);
                 float metalFraction = (metalFractionObj != null) ? metalFractionObj : 0f;
                 float transplutonicsFraction = (transplutonicsFractionObj != null) ? transplutonicsFractionObj : 0f;
                 float transplutonicOreFraction = (transplutonicOreFractionObj != null) ? transplutonicOreFractionObj : 0f;
                 float organicsFraction = (organicsFractionObj != null) ? organicsFractionObj : 0f;
                 float domesticGoodsFraction = (domesticGoodsFractionObj != null) ? domesticGoodsFractionObj : 0f;
+                float volatilesFraction = (volatilesFractionObj != null) ? volatilesFractionObj : 0f;
+                float fuelFraction = (fuelFractionObj != null) ? fuelFractionObj : 0f;
 
                 float metalAvailable = availableMetals + metalFraction;
                 float transplutonicsAvailable = availableTransplutonics + transplutonicsFraction;
@@ -424,7 +487,17 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
                 float remainingBudgetAfterTransplutonics = remainingBudgetAfterOre - maxTransplutonicOrePerDay * MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
                 if (remainingBudgetAfterTransplutonics < 0) remainingBudgetAfterTransplutonics = 0;
-                float maxOrganicsPerDay = remainingBudgetAfterTransplutonics / MobileRefiningPlugin.ORGANICS_PRICE;
+
+                float maxVolatilesPerDay = 0f;
+                float fuelPerDay = 0f;
+                if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f) {
+                    maxVolatilesPerDay = remainingBudgetAfterTransplutonics / MobileRefiningPlugin.VOLATILES_PRICE;
+                    fuelPerDay = maxVolatilesPerDay * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
+                }
+
+                float remainingBudgetAfterVolatiles = remainingBudgetAfterTransplutonics - maxVolatilesPerDay * MobileRefiningPlugin.VOLATILES_PRICE;
+                if (remainingBudgetAfterVolatiles < 0) remainingBudgetAfterVolatiles = 0;
+                float maxOrganicsPerDay = remainingBudgetAfterVolatiles / MobileRefiningPlugin.ORGANICS_PRICE;
                 float domesticGoodsPerDay = maxOrganicsPerDay * MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO;
 
                 tooltip.addPara("Supply demand: %s/day", opad, highlight, String.format("%.1f", dailySupplyConsumption));
@@ -441,6 +514,10 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 if (availableOrganics > 0 && domesticGoodsPerDay > 0) {
                     tooltip.addPara("Max organics processed: %s/day", opad, highlight, String.format("%.1f", maxOrganicsPerDay));
                     tooltip.addPara("Max domestic goods output: %s/day", opad, highlight, String.format("%.1f", domesticGoodsPerDay));
+                }
+                if (fleet.isInHyperspace() && availableVolatiles > 0 && fuelPerDay > 0) {
+                    tooltip.addPara("Max volatiles processed: %s/day", opad, highlight, String.format("%.1f", maxVolatilesPerDay));
+                    tooltip.addPara("Max fuel output: %s/day (80%% cap)", opad, highlight, String.format("%.1f", fuelPerDay));
                 }
             } else {
                 tooltip.addPara("No ships with Mobile Refinery hullmod in fleet.", opad, highlight);
