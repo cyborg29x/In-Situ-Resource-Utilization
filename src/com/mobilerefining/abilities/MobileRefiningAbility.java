@@ -156,21 +156,16 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             }
         }
 
-        if (remainingBudget > 0 && totalValueSpent > 0) {
-            float metalRatio = metalValueSpent / totalValueSpent;
-            float transplutonicsRatio = transplutonicsValueSpent / totalValueSpent;
-
-            float metalReplenishBudget = remainingBudget * metalRatio;
-            float transplutonicsReplenishBudget = remainingBudget * transplutonicsRatio;
-
-            float metalReplenish = metalReplenishBudget / MobileRefiningPlugin.METAL_PRICE;
-            float transplutonicsReplenish = transplutonicsReplenishBudget / MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
-
-            if (metalReplenish >= 1f) {
-                cargo.addCommodity("metals", metalReplenish);
-            }
-            if (transplutonicsReplenish >= 1f) {
-                cargo.addCommodity("rare_metals", transplutonicsReplenish);
+        float availableMetals = cargo.getCommodityQuantity("metals");
+        if (availableMetals > 0 && remainingBudget > 0) {
+            float maxMetalsWithBudget = remainingBudget / MobileRefiningPlugin.METAL_PRICE;
+            float metalsToProcess = Math.min(availableMetals, maxMetalsWithBudget);
+            if (metalsToProcess > 0) {
+                float suppliesProduced = metalsToProcess * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+                cargo.removeCommodity("metals", metalsToProcess);
+                cargo.addCommodity("supplies", suppliesProduced);
+                remainingBudget -= metalsToProcess * MobileRefiningPlugin.METAL_PRICE;
+                if (remainingBudget < 0) remainingBudget = 0;
             }
         }
 

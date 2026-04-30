@@ -20,6 +20,13 @@ All notable changes to this mod will be documented in this file.
 - Fixed tooltip supplies calculation to match runtime behavior
   - Changed from proportional budget split to sequential metal→transplutonics fallback
   - Tooltip now accurately reflects runtime conversion priority
+- Removed metal/transplutonic budget replenishment bug
+  - Eliminated code that converted remaining budget back to metals/transplutonics
+  - Remaining budget now flows directly to ore→metal conversion
+- Added "all metals to supplies regardless of usage" conversion step
+  - Runs after volatiles→fuel conversion, before ore→metal
+  - Converts all available metals to supplies using remaining budget
+  - Provides compression benefit (30/100 = 0.3 ratio)
 
 ## [0.1.15] - 2026-04-30
 
