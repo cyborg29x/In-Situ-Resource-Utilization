@@ -229,58 +229,30 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
 
         float remainingBudgetAfterReplenish = remainingBudget;
 
-        if (remainingBudgetAfterReplenish > 0 && availableOre > 0) {
-            float newOreFraction = remainingBudgetAfterReplenish / MobileRefiningPlugin.ORE_PRICE;
-            oreFraction += newOreFraction;
-        }
+        float[] oreResult = processResource(cargo, remainingBudgetAfterReplenish,
+            "ore", MobileRefiningPlugin.ORE_PRICE, availableOre,
+            "metals", MobileRefiningPlugin.ORE_TO_METAL_RATIO,
+            oreFraction, metalFraction);
+        oreFraction = oreResult[0];
+        metalFraction = oreResult[1];
+        float remainingBudgetAfterOre = oreResult[2];
 
-        float maxOreToProcess = Math.min(oreFraction, availableOre);
-        if (maxOreToProcess >= 1f) {
-            int oreToRemove = (int) maxOreToProcess;
-            cargo.removeCommodity("ore", oreToRemove);
-            float metalFromOre = oreToRemove * MobileRefiningPlugin.ORE_TO_METAL_RATIO;
-            metalFraction += metalFromOre;
-            oreFraction -= maxOreToProcess;
-        }
-
-        metalFraction = addFractionToCargo(cargo, "metals", metalFraction, cargo.getSpaceLeft());
-
-        float remainingBudgetAfterOre = remainingBudgetAfterReplenish - (oreFraction * MobileRefiningPlugin.ORE_PRICE);
-        if (remainingBudgetAfterOre > 0 && availableTransplutonicOre > 0) {
-            float newTransplutonicOreFraction = remainingBudgetAfterOre / MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
-            transplutonicOreFraction += newTransplutonicOreFraction;
-        }
-
-        float maxTransplutonicOreToProcess = Math.min(transplutonicOreFraction, availableTransplutonicOre);
-        if (maxTransplutonicOreToProcess >= 1f) {
-            int transplutonicOreToRemove = (int) maxTransplutonicOreToProcess;
-            cargo.removeCommodity("rare_ore", transplutonicOreToRemove);
-            float transplutonicsFromOre = transplutonicOreToRemove * MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO;
-            transplutonicsFraction += transplutonicsFromOre;
-            transplutonicOreFraction -= maxTransplutonicOreToProcess;
-        }
-
-        transplutonicsFraction = addFractionToCargo(cargo, "rare_metals", transplutonicsFraction, cargo.getSpaceLeft());
+        float[] transplutonicOreResult = processResource(cargo, remainingBudgetAfterOre,
+            "rare_ore", MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE, availableTransplutonicOre,
+            "rare_metals", MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO,
+            transplutonicOreFraction, transplutonicsFraction);
+        transplutonicOreFraction = transplutonicOreResult[0];
+        transplutonicsFraction = transplutonicOreResult[1];
+        float remainingBudgetAfterTransplutonics = transplutonicOreResult[2];
 
         suppliesFraction = addFractionToCargo(cargo, "supplies", suppliesFraction, cargo.getSpaceLeft());
 
-        float remainingBudgetAfterTransplutonics = remainingBudgetAfterOre - (transplutonicOreFraction * MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE);
-
-        if (remainingBudgetAfterTransplutonics > 0 && availableOrganics > 0) {
-            float newOrganicsFraction = remainingBudgetAfterTransplutonics / MobileRefiningPlugin.ORGANICS_PRICE;
-            organicsFraction += newOrganicsFraction;
-        }
-
-        float maxOrganicsToProcess = Math.min(organicsFraction, availableOrganics);
-        if (maxOrganicsToProcess >= 1f) {
-            int organicsToRemove = (int) maxOrganicsToProcess;
-            cargo.removeCommodity("organics", organicsToRemove);
-            float domesticGoodsFromOrganics = organicsToRemove * MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO;
-            domesticGoodsFraction += domesticGoodsFromOrganics;
-            organicsFraction -= maxOrganicsToProcess;
-        }
-
-        domesticGoodsFraction = addFractionToCargo(cargo, "domestic_goods", domesticGoodsFraction, cargo.getSpaceLeft());
+        float[] organicsResult = processResource(cargo, remainingBudgetAfterTransplutonics,
+            "organics", MobileRefiningPlugin.ORGANICS_PRICE, availableOrganics,
+            "domestic_goods", MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO,
+            organicsFraction, domesticGoodsFraction);
+        organicsFraction = organicsResult[0];
+        domesticGoodsFraction = organicsResult[1];
 
         persistentData.put(PERSISTENT_KEY_ORE_FRACTION, oreFraction);
         persistentData.put(PERSISTENT_KEY_METAL_FRACTION, metalFraction);
@@ -321,6 +293,17 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
         return fraction;
     }
 
+    private float removeFractionFromCargo(CargoAPI cargo, String commodity, float fraction) {
+        float available = cargo.getCommodityQuantity(commodity);
+        float quantityToRemove = Math.min(fraction, available);
+        if (quantityToRemove >= 1f) {
+            int quantity = (int) quantityToRemove;
+            cargo.removeCommodity(commodity, quantity);
+            return fraction - quantity;
+        }
+        return fraction;
+    }
+
     private float addFuelToCargo(CargoAPI cargo, float fraction) {
         float quantityToAdd = Math.min(fraction, cargo.getMaxFuel() - cargo.getFuel());
         if (quantityToAdd > 0) {
@@ -331,6 +314,31 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
             }
         }
         return fraction;
+    }
+
+    private float[] processResource(CargoAPI cargo, float budget,
+            String inputCommodity, float inputPrice, float inputAvailable,
+            String outputCommodity, float outputRatio,
+            float inputFraction, float outputFraction) {
+
+        float newInputFraction = 0f;
+        if (budget > 0 && inputAvailable > 0) {
+            newInputFraction = budget / inputPrice;
+        }
+        inputFraction += newInputFraction;
+
+        float maxToProcess = Math.min(inputFraction, inputAvailable);
+        if (maxToProcess >= 1f) {
+            float outputProduced = maxToProcess * outputRatio;
+            outputFraction += outputProduced;
+            inputFraction = removeFractionFromCargo(cargo, inputCommodity, inputFraction);
+        }
+
+        outputFraction = addFractionToCargo(cargo, outputCommodity, outputFraction, cargo.getSpaceLeft());
+
+        float remainingBudget = budget - (inputFraction * inputPrice);
+
+        return new float[] { inputFraction, outputFraction, remainingBudget };
     }
 
     @Override

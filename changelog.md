@@ -2,6 +2,17 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.15] - 2026-04-30
+
+- Refactored resource processing into reusable processResource() method
+  - Extracted ore→metal, transplutonic ore→transplutonics, organics→domestic goods conversion logic
+  - Reduces ~40 lines of duplicated code
+  - Maintains accurate budget tracking between conversion steps
+- Added removeFractionFromCargo() helper method
+  - Handles commodity removal with available cargo cap
+  - Returns remaining fraction for tracking
+- Renamed result variables to full names: oreResult, transplutonicOreResult, organicsResult
+
 ## [0.1.14] - 2026-04-30
 
 - Changed fuel cap calculation to use max(80%, fuel cap - 500)
