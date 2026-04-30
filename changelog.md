@@ -12,6 +12,13 @@ All notable changes to this mod will be documented in this file.
   - Uses getModifiedValue() to account for hullmod modifiers (e.g., D-mods)
   - Only adds deployment cost not already covered by existing supplies
   - Updated tooltip to show deployment cost separately: "Supply demand: X/day (+ Y deployment)"
+- Changed metal/transplutonics supply production to fallback logic
+  - Metal used first to produce supplies up to supplyNeed
+  - Transplutonics only used as fallback if metal can't cover full supplyNeed
+  - Replaced proportional budget split with sequential priority logic
+- Added "last 30 volatiles" rule to volatiles-to-fuel conversion
+  - Volatiles-to-fuel conversion now reserves last 30 volatiles before processing
+  - Prevents depleting all volatiles during long operations
 
 ## [0.1.13] - 2026-04-28
 

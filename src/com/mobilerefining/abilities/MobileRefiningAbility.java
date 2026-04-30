@@ -95,7 +95,8 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
                 float fuelValue = fuelToProduce * MobileRefiningPlugin.FUEL_PRICE;
                 float maxVolatilesAffordable = fuelValue / MobileRefiningPlugin.VOLATILES_PRICE;
                 float maxVolatilesWithBudget = totalCredits / MobileRefiningPlugin.VOLATILES_PRICE;
-                float volatilesToProcess = Math.min(volatilesRequired, Math.min(maxVolatilesAffordable, maxVolatilesWithBudget));
+                float volatilesAvailableForProcessing = Math.max(0, availableVolatiles + volatilesFraction - 30f);
+                float volatilesToProcess = Math.min(volatilesRequired, Math.min(maxVolatilesAffordable, Math.min(maxVolatilesWithBudget, volatilesAvailableForProcessing)));
 
                 volatilesFraction -= volatilesToProcess;
                 float volatilesToRemove = 0f;
@@ -140,25 +141,16 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
         float transplutonicsValueSpent = 0f;
 
         if (supplyNeed > 0 && totalValue > 0) {
-            float metalBudgetShare;
-            float transplutonicsBudgetShare;
-
-            if (metalValue > 0 && transplutonicsValue > 0) {
-                metalBudgetShare = supplyBudget * (metalValue / totalValue);
-                transplutonicsBudgetShare = supplyBudget * (transplutonicsValue / totalValue);
-            } else if (metalValue > 0) {
-                metalBudgetShare = supplyBudget;
-                transplutonicsBudgetShare = 0f;
-            } else {
-                metalBudgetShare = 0f;
-                transplutonicsBudgetShare = supplyBudget;
-            }
-
-            float metalBudgetForSupplies = Math.min(metalBudgetShare, supplyBudget);
-            float transplutonicsBudgetForSupplies = Math.min(transplutonicsBudgetShare, supplyBudget - metalBudgetForSupplies);
+            float metalBudgetForSupplies = Math.min(supplyBudget, metalValue);
 
             metalUsableForSupplies = Math.min(metalAvailable, metalBudgetForSupplies / MobileRefiningPlugin.METAL_PRICE);
-            transplutonicsUsableForSupplies = Math.min(transplutonicsAvailable, transplutonicsBudgetForSupplies / MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
+            float suppliesFromMetalOnly = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+
+            float remainingSupplyNeed = supplyNeed - suppliesFromMetalOnly;
+            if (remainingSupplyNeed > 0 && transplutonicsAvailable > 0) {
+                float transplutonicsBudgetForSupplies = Math.min(supplyBudget - metalBudgetForSupplies, transplutonicsValue);
+                transplutonicsUsableForSupplies = Math.min(transplutonicsAvailable, transplutonicsBudgetForSupplies / MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
+            }
 
             metalValueSpent = metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE;
             transplutonicsValueSpent = transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
