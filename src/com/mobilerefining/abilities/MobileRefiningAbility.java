@@ -9,20 +9,10 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import com.mobilerefining.plugins.MobileRefiningPlugin;
 import java.awt.Color;
-import java.util.Map;
 
 public class MobileRefiningAbility extends BaseToggleAbility {
 
     public static final String HULLMOD_ID = "mobile_refinery";
-    private static final String PERSISTENT_KEY_ORE_FRACTION = "MobileRefining_oreFraction";
-    private static final String PERSISTENT_KEY_METAL_FRACTION = "MobileRefining_metalFraction";
-    private static final String PERSISTENT_KEY_SUPPLIES_FRACTION = "MobileRefining_suppliesFraction";
-    private static final String PERSISTENT_KEY_TRANSPLUTONICS_FRACTION = "MobileRefining_transplutonicsFraction";
-    private static final String PERSISTENT_KEY_TRANSPLUTONIC_ORE_FRACTION = "MobileRefining_transplutonicOreFraction";
-    private static final String PERSISTENT_KEY_ORGANICS_FRACTION = "MobileRefining_organicsFraction";
-    private static final String PERSISTENT_KEY_DOMESTIC_GOODS_FRACTION = "MobileRefining_domesticGoodsFraction";
-    private static final String PERSISTENT_KEY_VOLATILES_FRACTION = "MobileRefining_volatilesFraction";
-    private static final String PERSISTENT_KEY_FUEL_FRACTION = "MobileRefining_fuelFraction";
 
     @Override
     protected void activateImpl() {
@@ -46,33 +36,6 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         }
 
         CargoAPI cargo = fleet.getCargo();
-        float availableOre = cargo.getCommodityQuantity("ore");
-        float availableMetals = cargo.getCommodityQuantity("metals");
-        float availableTransplutonics = cargo.getCommodityQuantity("rare_metals");
-        float availableTransplutonicOre = cargo.getCommodityQuantity("rare_ore");
-        float availableOrganics = cargo.getCommodityQuantity("organics");
-        float availableDomesticGoods = cargo.getCommodityQuantity("domestic_goods");
-        float availableVolatiles = cargo.getCommodityQuantity("volatiles");
-
-        Map<String, Object> persistentData = Global.getSector().getPersistentData();
-        Float oreFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORE_FRACTION);
-        Float metalFractionObj = (Float) persistentData.get(PERSISTENT_KEY_METAL_FRACTION);
-        Float suppliesFractionObj = (Float) persistentData.get(PERSISTENT_KEY_SUPPLIES_FRACTION);
-        Float transplutonicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_TRANSPLUTONICS_FRACTION);
-        Float transplutonicOreFractionObj = (Float) persistentData.get(PERSISTENT_KEY_TRANSPLUTONIC_ORE_FRACTION);
-Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_FRACTION);
-        Float domesticGoodsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_DOMESTIC_GOODS_FRACTION);
-        Float volatilesFractionObj = (Float) persistentData.get(PERSISTENT_KEY_VOLATILES_FRACTION);
-        Float fuelFractionObj = (Float) persistentData.get(PERSISTENT_KEY_FUEL_FRACTION);
-        float oreFraction = (oreFractionObj != null) ? oreFractionObj : 0f;
-        float metalFraction = (metalFractionObj != null) ? metalFractionObj : 0f;
-        float suppliesFraction = (suppliesFractionObj != null) ? suppliesFractionObj : 0f;
-        float transplutonicsFraction = (transplutonicsFractionObj != null) ? transplutonicsFractionObj : 0f;
-        float transplutonicOreFraction = (transplutonicOreFractionObj != null) ? transplutonicOreFractionObj : 0f;
-        float organicsFraction = (organicsFractionObj != null) ? organicsFractionObj : 0f;
-        float domesticGoodsFraction = (domesticGoodsFractionObj != null) ? domesticGoodsFractionObj : 0f;
-        float volatilesFraction = (volatilesFractionObj != null) ? volatilesFractionObj : 0f;
-        float fuelFraction = (fuelFractionObj != null) ? fuelFractionObj : 0f;
 
         float totalCredits = totalBudget * days;
         float valueSpentOnVolatiles = 0f;
@@ -91,29 +54,19 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
 
             if (fuelToProduce > 0) {
                 float volatilesRequired = fuelToProduce / MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
-
-                float fuelValue = fuelToProduce * MobileRefiningPlugin.FUEL_PRICE;
-                float maxVolatilesAffordable = fuelValue / MobileRefiningPlugin.VOLATILES_PRICE;
                 float maxVolatilesWithBudget = totalCredits / MobileRefiningPlugin.VOLATILES_PRICE;
-                float volatilesAvailableForProcessing = Math.max(0, availableVolatiles + volatilesFraction - 30f);
-                float volatilesToProcess = Math.min(volatilesRequired, Math.min(maxVolatilesAffordable, Math.min(maxVolatilesWithBudget, volatilesAvailableForProcessing)));
+                float availableVolatiles = cargo.getCommodityQuantity("volatiles");
+                float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
+                float volatilesToProcess = Math.min(volatilesRequired, Math.min(maxVolatilesWithBudget, volatilesAvailableForProcessing));
 
-                volatilesFraction -= volatilesToProcess;
-                float volatilesToRemove = 0f;
-                if (volatilesFraction < 0) {
-                    volatilesToRemove = Math.min(availableVolatiles, -volatilesFraction);
-                    if (volatilesToRemove >= 1f) {
-                        cargo.removeCommodity("volatiles", (int) volatilesToRemove);
-                    }
-                    volatilesFraction += (int) volatilesToRemove;
+                if (volatilesToProcess > 0) {
+                    float fuelProduced = volatilesToProcess * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
+                    cargo.removeCommodity("volatiles", volatilesToProcess);
+                    cargo.addFuel(fuelProduced);
                 }
 
-                float fuelFromVolatiles = volatilesToProcess * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
-                fuelFraction += fuelFromVolatiles;
-                fuelFraction = addFuelToCargo(cargo, fuelFraction);
-
                 valueSpentOnVolatiles = volatilesToProcess * MobileRefiningPlugin.VOLATILES_PRICE;
-                Global.getLogger(this.getClass()).info("DEBUG: volatilesFraction=" + volatilesFraction + " volatilesToProcess=" + volatilesToProcess + " volatilesToRemove=" + volatilesToRemove + " fuelFromVolatiles=" + fuelFromVolatiles);
+                Global.getLogger(this.getClass()).info("DEBUG: volatilesToProcess=" + volatilesToProcess + " fuelToProduce=" + fuelToProduce);
             } else {
                 valueSpentOnVolatiles = 0;
             }
@@ -126,8 +79,8 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
         float currentSupplies = cargo.getSupplies();
         float deploymentCostNeeded = Math.max(0, militaryDeploymentCost - currentSupplies);
         float supplyNeed = (dailySupplyConsumption * days) + deploymentCostNeeded;
-        float metalAvailable = availableMetals + metalFraction;
-        float transplutonicsAvailable = availableTransplutonics + transplutonicsFraction;
+        float metalAvailable = cargo.getCommodityQuantity("metals");
+        float transplutonicsAvailable = cargo.getCommodityQuantity("rare_metals");
 
         float metalValue = metalAvailable * MobileRefiningPlugin.METAL_PRICE;
         float transplutonicsValue = transplutonicsAvailable * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
@@ -173,34 +126,35 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
         }
 
         if (totalSuppliesProduced > 0) {
-            float remainingMetal = metalFraction - metalUsableForSupplies;
-            if (remainingMetal >= 0) {
-                metalFraction = remainingMetal;
-            } else {
-                float metalToRemove = Math.min(availableMetals, -remainingMetal);
-                if (metalToRemove >= 1f) {
-                    cargo.removeCommodity("metals", (int) metalToRemove);
-                }
-                metalFraction = remainingMetal + (int) metalToRemove;
-            }
-
-            float remainingTransplutonics = transplutonicsFraction - transplutonicsUsableForSupplies;
-            if (remainingTransplutonics >= 0) {
-                transplutonicsFraction = remainingTransplutonics;
-            } else {
-                float transplutonicsToRemove = Math.min(availableTransplutonics, -remainingTransplutonics);
-                if (transplutonicsToRemove >= 1f) {
-                    cargo.removeCommodity("rare_metals", (int) transplutonicsToRemove);
-                }
-                transplutonicsFraction = remainingTransplutonics + (int) transplutonicsToRemove;
-            }
-
-            suppliesFraction += totalSuppliesProduced;
-            suppliesFraction = addFractionToCargo(cargo, "supplies", suppliesFraction, cargo.getSpaceLeft());
+            cargo.removeCommodity("metals", metalUsableForSupplies);
+            cargo.removeCommodity("rare_metals", transplutonicsUsableForSupplies);
+            cargo.addCommodity("supplies", totalSuppliesProduced);
         }
 
         float totalValueSpent = metalValueSpent + transplutonicsValueSpent;
         float remainingBudget = remainingCredits - totalValueSpent;
+
+        float currentFuel = cargo.getFuel();
+        float maxFuel = cargo.getMaxFuel();
+        float maxAllowedFuel = Math.max(maxFuel * 0.8f, maxFuel - 500f);
+        float fuelSpace = maxAllowedFuel - currentFuel;
+        if (fuelSpace < 0) fuelSpace = 0;
+
+        if (fuelSpace > 0 && remainingBudget > 0) {
+            float volatilesRequired = fuelSpace / MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
+            float maxVolatilesWithBudget = remainingBudget / MobileRefiningPlugin.VOLATILES_PRICE;
+            float availableVolatiles = cargo.getCommodityQuantity("volatiles");
+            float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
+            float volatilesToProcess = Math.min(volatilesRequired, Math.min(maxVolatilesWithBudget, volatilesAvailableForProcessing));
+
+            if (volatilesToProcess > 0) {
+                float fuelProduced = volatilesToProcess * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
+                cargo.removeCommodity("volatiles", volatilesToProcess);
+                cargo.addFuel(fuelProduced);
+                remainingBudget -= volatilesToProcess * MobileRefiningPlugin.VOLATILES_PRICE;
+                if (remainingBudget < 0) remainingBudget = 0;
+            }
+        }
 
         if (remainingBudget > 0 && totalValueSpent > 0) {
             float metalRatio = metalValueSpent / totalValueSpent;
@@ -212,57 +166,25 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
             float metalReplenish = metalReplenishBudget / MobileRefiningPlugin.METAL_PRICE;
             float transplutonicsReplenish = transplutonicsReplenishBudget / MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
 
-            if (metalReplenish >= 1f && availableMetals > 0) {
-                float metalToAdd = Math.min(metalReplenish, availableMetals);
-                cargo.addCommodity("metals", (int) metalToAdd);
-                metalReplenish -= metalToAdd;
+            if (metalReplenish >= 1f) {
+                cargo.addCommodity("metals", metalReplenish);
             }
-            metalFraction += metalReplenish;
-
-            if (transplutonicsReplenish >= 1f && availableTransplutonics > 0) {
-                float transplutonicsToAdd = Math.min(transplutonicsReplenish, availableTransplutonics);
-                cargo.addCommodity("rare_metals", (int) transplutonicsToAdd);
-                transplutonicsReplenish -= transplutonicsToAdd;
+            if (transplutonicsReplenish >= 1f) {
+                cargo.addCommodity("rare_metals", transplutonicsReplenish);
             }
-            transplutonicsFraction += transplutonicsReplenish;
         }
 
-        float remainingBudgetAfterReplenish = remainingBudget;
+        float remainingBudgetAfterOre = processResource(cargo, remainingBudget,
+            "ore", MobileRefiningPlugin.ORE_PRICE,
+            "metals", MobileRefiningPlugin.ORE_TO_METAL_RATIO);
 
-        float[] oreResult = processResource(cargo, remainingBudgetAfterReplenish,
-            "ore", MobileRefiningPlugin.ORE_PRICE, availableOre,
-            "metals", MobileRefiningPlugin.ORE_TO_METAL_RATIO,
-            oreFraction, metalFraction);
-        oreFraction = oreResult[0];
-        metalFraction = oreResult[1];
-        float remainingBudgetAfterOre = oreResult[2];
+        float remainingBudgetAfterTransplutonics = processResource(cargo, remainingBudgetAfterOre,
+            "rare_ore", MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE,
+            "rare_metals", MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO);
 
-        float[] transplutonicOreResult = processResource(cargo, remainingBudgetAfterOre,
-            "rare_ore", MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE, availableTransplutonicOre,
-            "rare_metals", MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO,
-            transplutonicOreFraction, transplutonicsFraction);
-        transplutonicOreFraction = transplutonicOreResult[0];
-        transplutonicsFraction = transplutonicOreResult[1];
-        float remainingBudgetAfterTransplutonics = transplutonicOreResult[2];
-
-        suppliesFraction = addFractionToCargo(cargo, "supplies", suppliesFraction, cargo.getSpaceLeft());
-
-        float[] organicsResult = processResource(cargo, remainingBudgetAfterTransplutonics,
-            "organics", MobileRefiningPlugin.ORGANICS_PRICE, availableOrganics,
-            "domestic_goods", MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO,
-            organicsFraction, domesticGoodsFraction);
-        organicsFraction = organicsResult[0];
-        domesticGoodsFraction = organicsResult[1];
-
-        persistentData.put(PERSISTENT_KEY_ORE_FRACTION, oreFraction);
-        persistentData.put(PERSISTENT_KEY_METAL_FRACTION, metalFraction);
-        persistentData.put(PERSISTENT_KEY_SUPPLIES_FRACTION, suppliesFraction);
-        persistentData.put(PERSISTENT_KEY_TRANSPLUTONICS_FRACTION, transplutonicsFraction);
-        persistentData.put(PERSISTENT_KEY_TRANSPLUTONIC_ORE_FRACTION, transplutonicOreFraction);
-        persistentData.put(PERSISTENT_KEY_ORGANICS_FRACTION, organicsFraction);
-        persistentData.put(PERSISTENT_KEY_DOMESTIC_GOODS_FRACTION, domesticGoodsFraction);
-        persistentData.put(PERSISTENT_KEY_VOLATILES_FRACTION, volatilesFraction);
-        persistentData.put(PERSISTENT_KEY_FUEL_FRACTION, fuelFraction);
+        processResource(cargo, remainingBudgetAfterTransplutonics,
+            "organics", MobileRefiningPlugin.ORGANICS_PRICE,
+            "domestic_goods", MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO);
     }
 
     private float calculateDailySupplyConsumption(CampaignFleetAPI fleet) {
@@ -283,62 +205,25 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
         return totalDeploymentCost;
     }
 
-    private float addFractionToCargo(CargoAPI cargo, String commodity, float fraction, float maxQuantityToAdd) {
-        float quantityToAdd = Math.min(fraction, maxQuantityToAdd);
-        if (quantityToAdd >= 1f) {
-            int quantity = (int) quantityToAdd;
-            cargo.addCommodity(commodity, quantity);
-            return fraction - quantity;
+    private float processResource(CargoAPI cargo, float budget,
+            String inputCommodity, float inputPrice,
+            String outputCommodity, float outputRatio) {
+
+        float inputToProcess = 0f;
+        if (budget > 0) {
+            inputToProcess = budget / inputPrice;
         }
-        return fraction;
-    }
 
-    private float removeFractionFromCargo(CargoAPI cargo, String commodity, float fraction) {
-        float available = cargo.getCommodityQuantity(commodity);
-        float quantityToRemove = Math.min(fraction, available);
-        if (quantityToRemove >= 1f) {
-            int quantity = (int) quantityToRemove;
-            cargo.removeCommodity(commodity, quantity);
-            return fraction - quantity;
-        }
-        return fraction;
-    }
-
-    private float addFuelToCargo(CargoAPI cargo, float fraction) {
-        float quantityToAdd = Math.min(fraction, cargo.getMaxFuel() - cargo.getFuel());
-        if (quantityToAdd > 0) {
-            int quantity = (int) quantityToAdd;
-            if (quantity >= 1f) {
-                cargo.addFuel(quantity);
-                return fraction - quantity;
-            }
-        }
-        return fraction;
-    }
-
-    private float[] processResource(CargoAPI cargo, float budget,
-            String inputCommodity, float inputPrice, float inputAvailable,
-            String outputCommodity, float outputRatio,
-            float inputFraction, float outputFraction) {
-
-        float newInputFraction = 0f;
-        if (budget > 0 && inputAvailable > 0) {
-            newInputFraction = budget / inputPrice;
-        }
-        inputFraction += newInputFraction;
-
-        float maxToProcess = Math.min(inputFraction, inputAvailable);
-        if (maxToProcess >= 1f) {
+        float available = cargo.getCommodityQuantity(inputCommodity);
+        float maxToProcess = Math.min(inputToProcess, available);
+        if (maxToProcess > 0) {
+            cargo.removeCommodity(inputCommodity, maxToProcess);
             float outputProduced = maxToProcess * outputRatio;
-            outputFraction += outputProduced;
-            inputFraction = removeFractionFromCargo(cargo, inputCommodity, inputFraction);
+            cargo.addCommodity(outputCommodity, outputProduced);
+            return budget - (maxToProcess * inputPrice);
         }
 
-        outputFraction = addFractionToCargo(cargo, outputCommodity, outputFraction, cargo.getSpaceLeft());
-
-        float remainingBudget = budget - (inputFraction * inputPrice);
-
-        return new float[] { inputFraction, outputFraction, remainingBudget };
+        return budget;
     }
 
     @Override
@@ -422,68 +307,31 @@ Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_F
                 float availableMetals = cargo.getCommodityQuantity("metals");
                 float availableTransplutonics = cargo.getCommodityQuantity("rare_metals");
                 float availableOre = cargo.getCommodityQuantity("ore");
-                float availableTransplutonicOre = cargo.getCommodityQuantity("rare_ore");
                 float availableOrganics = cargo.getCommodityQuantity("organics");
-                float availableDomesticGoods = cargo.getCommodityQuantity("domestic_goods");
                 float availableVolatiles = cargo.getCommodityQuantity("volatiles");
 
-                Map<String, Object> persistentData = Global.getSector().getPersistentData();
-                Float metalFractionObj = (Float) persistentData.get(PERSISTENT_KEY_METAL_FRACTION);
-                Float transplutonicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_TRANSPLUTONICS_FRACTION);
-                Float transplutonicOreFractionObj = (Float) persistentData.get(PERSISTENT_KEY_TRANSPLUTONIC_ORE_FRACTION);
-                Float organicsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_ORGANICS_FRACTION);
-                Float domesticGoodsFractionObj = (Float) persistentData.get(PERSISTENT_KEY_DOMESTIC_GOODS_FRACTION);
-                Float volatilesFractionObj = (Float) persistentData.get(PERSISTENT_KEY_VOLATILES_FRACTION);
-                Float fuelFractionObj = (Float) persistentData.get(PERSISTENT_KEY_FUEL_FRACTION);
-                float metalFraction = (metalFractionObj != null) ? metalFractionObj : 0f;
-                float transplutonicsFraction = (transplutonicsFractionObj != null) ? transplutonicsFractionObj : 0f;
-                float transplutonicOreFraction = (transplutonicOreFractionObj != null) ? transplutonicOreFractionObj : 0f;
-                float organicsFraction = (organicsFractionObj != null) ? organicsFractionObj : 0f;
-                float domesticGoodsFraction = (domesticGoodsFractionObj != null) ? domesticGoodsFractionObj : 0f;
-                float volatilesFraction = (volatilesFractionObj != null) ? volatilesFractionObj : 0f;
-                float fuelFraction = (fuelFractionObj != null) ? fuelFractionObj : 0f;
-
-                float metalAvailable = availableMetals + metalFraction;
-                float transplutonicsAvailable = availableTransplutonics + transplutonicsFraction;
-                float transplutonicOreAvailable = availableTransplutonicOre + transplutonicOreFraction;
-                float organicsAvailable = availableOrganics + organicsFraction;
-                float domesticGoodsAvailable = availableDomesticGoods + domesticGoodsFraction;
-
-                Global.getLogger(this.getClass()).info("DEBUG TOOLTIP: availableMetals=" + availableMetals + " availableTransplutonics=" + availableTransplutonics + " metalFraction=" + metalFraction + " transplutonicsFraction=" + transplutonicsFraction);
-                Global.getLogger(this.getClass()).info("DEBUG TOOLTIP: availableTransplutonicOre=" + availableTransplutonicOre + " transplutonicOreFraction=" + transplutonicOreFraction);
-
-                float metalValue = metalAvailable * MobileRefiningPlugin.METAL_PRICE;
-                float transplutonicsValue = transplutonicsAvailable * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
+                float metalValue = availableMetals * MobileRefiningPlugin.METAL_PRICE;
+                float transplutonicsValue = availableTransplutonics * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
                 float totalValue = metalValue + transplutonicsValue;
-
-                Global.getLogger(this.getClass()).info("DEBUG TOOLTIP: metalValue=" + metalValue + " transplutonicsValue=" + transplutonicsValue + " totalValue=" + totalValue + " budget=" + budget);
 
                 float metalUsableForSupplies = 0f;
                 float transplutonicsUsableForSupplies = 0f;
 
                 if (totalValue > 0) {
                     float supplyBudget = budget;
-                    float metalBudgetShare;
-                    float transplutonicsBudgetShare;
 
-                    if (metalValue > 0 && transplutonicsValue > 0) {
-                        metalBudgetShare = supplyBudget * (metalValue / totalValue);
-                        transplutonicsBudgetShare = supplyBudget * (transplutonicsValue / totalValue);
-                    } else if (metalValue > 0) {
-                        metalBudgetShare = supplyBudget;
-                        transplutonicsBudgetShare = 0f;
-                    } else {
-                        metalBudgetShare = 0f;
-                        transplutonicsBudgetShare = supplyBudget;
+                    float metalBudgetForSupplies = Math.min(supplyBudget, metalValue);
+                    metalUsableForSupplies = Math.min(availableMetals, metalBudgetForSupplies / MobileRefiningPlugin.METAL_PRICE);
+                    float suppliesFromMetalOnly = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+
+                    float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
+                    float deploymentCostNeeded = Math.max(0, militaryDeploymentCost - cargo.getSupplies());
+                    float supplyNeed = dailySupplyConsumption + deploymentCostNeeded;
+                    float remainingSupplyNeed = supplyNeed - suppliesFromMetalOnly;
+                    if (remainingSupplyNeed > 0 && availableTransplutonics > 0) {
+                        float transplutonicsBudgetForSupplies = Math.min(supplyBudget - metalBudgetForSupplies, transplutonicsValue);
+                        transplutonicsUsableForSupplies = Math.min(availableTransplutonics, transplutonicsBudgetForSupplies / MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
                     }
-
-                    float metalBudgetForSupplies = Math.min(metalBudgetShare, supplyBudget);
-                    float transplutonicsBudgetForSupplies = Math.min(transplutonicsBudgetShare, supplyBudget - metalBudgetForSupplies);
-
-                    metalUsableForSupplies = Math.min(metalAvailable, metalBudgetForSupplies / MobileRefiningPlugin.METAL_PRICE);
-                    transplutonicsUsableForSupplies = Math.min(transplutonicsAvailable, transplutonicsBudgetForSupplies / MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
-                    Global.getLogger(this.getClass()).info("DEBUG TOOLTIP: metalBudgetForSupplies=" + metalBudgetForSupplies + " transplutonicsBudgetForSupplies=" + transplutonicsBudgetForSupplies);
-                    Global.getLogger(this.getClass()).info("DEBUG TOOLTIP: metalUsableForSupplies=" + metalUsableForSupplies + " transplutonicsUsableForSupplies=" + transplutonicsUsableForSupplies);
                 }
 
                 float suppliesFromMetal = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;

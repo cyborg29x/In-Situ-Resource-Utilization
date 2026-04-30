@@ -2,6 +2,25 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.16] - 2026-04-30
+
+- Replaced fractional tracking with direct float cargo operations
+  - Removed 9 PERSISTENT_KEY_*_FRACTION constants and all persistent fraction storage
+  - CargoAPI.addCommodity()/removeCommodity() now called directly with float quantities
+  - Removed addFractionToCargo(), removeFractionFromCargo(), addFuelToCargo() helper methods
+  - processResource() now takes 5 parameters instead of 9, returns float instead of float[]
+  - File reduced from 541 to ~390 lines
+- Fixed hyperspace fuel production unbounded by budget
+  - Fuel produced now equals volatiles processed × VOLATILES_TO_FUEL_RATIO
+  - Previously could produce more fuel than volatiles cost could afford
+- Added normal-space volatiles-to-fuel conversion
+  - Runs after supplies production with remaining budget
+  - Converts volatiles to fuel up to 80% cap (or cap - 500), reserves 30 volatiles
+  - Consumes budget so it doesn't incorrectly flow to ore processing
+- Fixed tooltip supplies calculation to match runtime behavior
+  - Changed from proportional budget split to sequential metal→transplutonics fallback
+  - Tooltip now accurately reflects runtime conversion priority
+
 ## [0.1.15] - 2026-04-30
 
 - Refactored resource processing into reusable processResource() method
