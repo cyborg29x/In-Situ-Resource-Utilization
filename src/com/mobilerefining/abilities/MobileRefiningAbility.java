@@ -59,7 +59,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 float budgetByVolatiles = volatilesAvailableForProcessing * MobileRefiningPlugin.VOLATILES_PRICE;
                 float effectiveBudget = Math.min(totalCredits, Math.min(budgetByFuelSpace, budgetByVolatiles));
 
-                valueSpentOnVolatiles = effectiveBudget - processResource(cargo, effectiveBudget,
+                valueSpentOnVolatiles = processResource(cargo, effectiveBudget,
                     "volatiles", MobileRefiningPlugin.VOLATILES_PRICE,
                     "fuel", MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO);
             } else {
@@ -75,7 +75,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         float maxMetalBudget = supplyNeed / MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO * MobileRefiningPlugin.METAL_PRICE;
         float budgetForMetals = Math.min(remainingBudget, maxMetalBudget);
-        float metalsSpent = budgetForMetals - processResource(cargo, budgetForMetals,
+        float metalsSpent = processResource(cargo, budgetForMetals,
             "metals", MobileRefiningPlugin.METAL_PRICE,
             "supplies", MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
         remainingBudget -= metalsSpent;
@@ -84,10 +84,9 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         float remainingNeed = Math.max(0, supplyNeed - metalSuppliesProduced);
         float maxTransplutonicsBudget = remainingNeed / MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
         float budgetForTransplutonics = Math.min(remainingBudget, maxTransplutonicsBudget);
-        float transplutonicsSpent = budgetForTransplutonics - processResource(cargo, budgetForTransplutonics,
+        remainingBudget -= processResource(cargo, budgetForTransplutonics,
             "rare_metals", MobileRefiningPlugin.TRANSPLUTONICS_PRICE,
             "supplies", MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO);
-        remainingBudget -= transplutonicsSpent;
 
         float currentFuel = cargo.getFuel();
         float maxFuel = cargo.getMaxFuel();
@@ -101,21 +100,20 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             float budgetByFuelSpace = volatilesRequired * MobileRefiningPlugin.VOLATILES_PRICE;
             float budgetByVolatiles = volatilesAvailableForProcessing * MobileRefiningPlugin.VOLATILES_PRICE;
             float effectiveBudget = Math.min(remainingBudget, Math.min(budgetByFuelSpace, budgetByVolatiles));
-            float volatilesSpent = effectiveBudget - processResource(cargo, effectiveBudget,
+            remainingBudget -= processResource(cargo, effectiveBudget,
                 "volatiles", MobileRefiningPlugin.VOLATILES_PRICE,
                 "fuel", MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO);
-            remainingBudget -= volatilesSpent;
         }
 
-        remainingBudget = processResource(cargo, remainingBudget,
+        remainingBudget -= processResource(cargo, remainingBudget,
             "metals", MobileRefiningPlugin.METAL_PRICE,
             "supplies", MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
 
-        float remainingBudgetAfterOre = processResource(cargo, remainingBudget,
+        float remainingBudgetAfterOre = remainingBudget - processResource(cargo, remainingBudget,
             "ore", MobileRefiningPlugin.ORE_PRICE,
             "metals", MobileRefiningPlugin.ORE_TO_METAL_RATIO);
 
-        float remainingBudgetAfterTransplutonics = processResource(cargo, remainingBudgetAfterOre,
+        float remainingBudgetAfterTransplutonics = remainingBudgetAfterOre - processResource(cargo, remainingBudgetAfterOre,
             "rare_ore", MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE,
             "rare_metals", MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO);
 
@@ -161,10 +159,10 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             cargo.removeCommodity(inputCommodity, maxToProcess);
             float outputProduced = maxToProcess * outputRatio;
             cargo.addCommodity(outputCommodity, outputProduced);
-            return budget - (maxToProcess * inputPrice);
+            return maxToProcess * inputPrice;
         }
 
-        return budget;
+        return 0f;
     }
 
     @Override

@@ -8,6 +8,8 @@ All notable changes to this mod will be documented in this file.
   - Fixed budget tracking bug
 - Supplies production now aware of increased usage from readiness and hull recovery
 - Both fuel production steps now using processResource()
+- processResource() now returns total processed commodity value instead of remaining budget
+  - Related code refactored
 
 ## [0.1.16] - 2026-04-30
 
