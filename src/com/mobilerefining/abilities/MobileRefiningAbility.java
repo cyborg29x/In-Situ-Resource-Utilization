@@ -74,65 +74,25 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         float remainingCredits = totalCredits - valueSpentOnVolatiles;
 
-        float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
-        float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
-        float currentSupplies = cargo.getSupplies();
-        float deploymentCostNeeded = Math.max(0, militaryDeploymentCost - currentSupplies);
-        float supplyNeed = (dailySupplyConsumption * days) + deploymentCostNeeded;
-        float metalAvailable = cargo.getCommodityQuantity("metals");
-        float transplutonicsAvailable = cargo.getCommodityQuantity("rare_metals");
+        float supplyNeed = calculateSupplyNeed(fleet, days, cargo);
 
-        float metalValue = metalAvailable * MobileRefiningPlugin.METAL_PRICE;
-        float transplutonicsValue = transplutonicsAvailable * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
-        float totalValue = metalValue + transplutonicsValue;
+        float remainingBudget = remainingCredits;
 
-        float supplyBudget = remainingCredits;
+        float maxMetalBudget = supplyNeed / MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO * MobileRefiningPlugin.METAL_PRICE;
+        float budgetForMetals = Math.min(remainingBudget, maxMetalBudget);
+        float metalsSpent = budgetForMetals - processResource(cargo, budgetForMetals,
+            "metals", MobileRefiningPlugin.METAL_PRICE,
+            "supplies", MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
+        remainingBudget -= metalsSpent;
 
-        float metalUsableForSupplies = 0f;
-        float transplutonicsUsableForSupplies = 0f;
-        float metalValueSpent = 0f;
-        float transplutonicsValueSpent = 0f;
-
-        if (supplyNeed > 0 && totalValue > 0) {
-            float metalBudgetForSupplies = Math.min(supplyBudget, metalValue);
-
-            metalUsableForSupplies = Math.min(metalAvailable, metalBudgetForSupplies / MobileRefiningPlugin.METAL_PRICE);
-            float suppliesFromMetalOnly = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
-
-            float remainingSupplyNeed = supplyNeed - suppliesFromMetalOnly;
-            if (remainingSupplyNeed > 0 && transplutonicsAvailable > 0) {
-                float transplutonicsBudgetForSupplies = Math.min(supplyBudget - metalBudgetForSupplies, transplutonicsValue);
-                transplutonicsUsableForSupplies = Math.min(transplutonicsAvailable, transplutonicsBudgetForSupplies / MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
-            }
-
-            metalValueSpent = metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE;
-            transplutonicsValueSpent = transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
-        }
-
-        float suppliesFromMetals = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
-        float suppliesFromTransplutonics = transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO;
-        float totalSuppliesProduced = suppliesFromMetals + suppliesFromTransplutonics;
-
-        if (totalSuppliesProduced > supplyNeed && supplyNeed > 0) {
-            float scaleFactor = supplyNeed / totalSuppliesProduced;
-            metalUsableForSupplies *= scaleFactor;
-            transplutonicsUsableForSupplies *= scaleFactor;
-            suppliesFromMetals = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
-            suppliesFromTransplutonics = transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO;
-            totalSuppliesProduced = supplyNeed;
-
-            metalValueSpent *= scaleFactor;
-            transplutonicsValueSpent *= scaleFactor;
-        }
-
-        if (totalSuppliesProduced > 0) {
-            cargo.removeCommodity("metals", metalUsableForSupplies);
-            cargo.removeCommodity("rare_metals", transplutonicsUsableForSupplies);
-            cargo.addCommodity("supplies", totalSuppliesProduced);
-        }
-
-        float totalValueSpent = metalValueSpent + transplutonicsValueSpent;
-        float remainingBudget = remainingCredits - totalValueSpent;
+        float metalSuppliesProduced = metalsSpent / MobileRefiningPlugin.METAL_PRICE * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+        float remainingNeed = Math.max(0, supplyNeed - metalSuppliesProduced);
+        float maxTransplutonicsBudget = remainingNeed / MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
+        float budgetForTransplutonics = Math.min(remainingBudget, maxTransplutonicsBudget);
+        float transplutonicsSpent = budgetForTransplutonics - processResource(cargo, budgetForTransplutonics,
+            "rare_metals", MobileRefiningPlugin.TRANSPLUTONICS_PRICE,
+            "supplies", MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO);
+        remainingBudget -= transplutonicsSpent;
 
         float currentFuel = cargo.getFuel();
         float maxFuel = cargo.getMaxFuel();
@@ -174,6 +134,10 @@ public class MobileRefiningAbility extends BaseToggleAbility {
     }
 
     private float calculateDailySupplyConsumption(CampaignFleetAPI fleet) {
+        return fleet.getLogistics().getShipMaintenanceSupplyCost();
+    }
+
+    private float calculateBaseSupplyConsumption(CampaignFleetAPI fleet) {
         float totalSupplies = 0f;
         for (FleetMemberAPI member : fleet.getFleetData().getMembersListCopy()) {
             totalSupplies += member.getStats().getSuppliesPerMonth().getModifiedValue() / 30f;
@@ -218,6 +182,14 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
     @Override
     protected void cleanupImpl() {
+    }
+
+    private float calculateSupplyNeed(CampaignFleetAPI fleet, float days, CargoAPI cargo) {
+        float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
+        float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
+        float currentSupplies = cargo.getSupplies();
+        float deploymentCostNeeded = Math.max(0, militaryDeploymentCost - currentSupplies);
+        return (dailySupplyConsumption * days) + deploymentCostNeeded;
     }
 
     private float getTotalProcessingBudget(CampaignFleetAPI fleet) {
@@ -310,9 +282,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                     metalUsableForSupplies = Math.min(availableMetals, metalBudgetForSupplies / MobileRefiningPlugin.METAL_PRICE);
                     float suppliesFromMetalOnly = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
 
-                    float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
-                    float deploymentCostNeeded = Math.max(0, militaryDeploymentCost - cargo.getSupplies());
-                    float supplyNeed = dailySupplyConsumption + deploymentCostNeeded;
+                    float supplyNeed = calculateSupplyNeed(fleet, 1f, cargo);
                     float remainingSupplyNeed = supplyNeed - suppliesFromMetalOnly;
                     if (remainingSupplyNeed > 0 && availableTransplutonics > 0) {
                         float transplutonicsBudgetForSupplies = Math.min(supplyBudget - metalBudgetForSupplies, transplutonicsValue);
@@ -348,7 +318,13 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 float domesticGoodsPerDay = maxOrganicsPerDay * MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO;
 
                 float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
-                tooltip.addPara("Supply demand: %s/day (+ %s deployment)", opad, highlight, String.format("%.1f", dailySupplyConsumption), String.format("%.1f", militaryDeploymentCost));
+                float baseSupplyCost = calculateBaseSupplyConsumption(fleet);
+                float repairSupplyCost = dailySupplyConsumption - baseSupplyCost;
+                if (repairSupplyCost > 0) {
+                    tooltip.addPara("Supply demand: %s/day (+ %s/day repairs + %s deployment)", opad, highlight, String.format("%.1f", dailySupplyConsumption), String.format("%.1f", repairSupplyCost), String.format("%.1f", militaryDeploymentCost));
+                } else {
+                    tooltip.addPara("Supply demand: %s/day (+ %s deployment)", opad, highlight, String.format("%.1f", dailySupplyConsumption), String.format("%.1f", militaryDeploymentCost));
+                }
                 tooltip.addPara("Max supplies from metal: %s/day", opad, highlight, String.format("%.1f", suppliesFromMetal));
                 tooltip.addPara("Max supplies from transplutonics: %s/day", opad, highlight, String.format("%.1f", suppliesFromTransplutonics));
                 if (availableOre > 0 && metalPerDay > 0) {

@@ -5,6 +5,8 @@ All notable changes to this mod will be documented in this file.
 ## [0.1.17] - 2026-05-01
 
 - Refactored metal to supplies to use the processResource() method
+  - Fixed budget tracking bug
+- Supplies production now aware of increased usage from readiness and hull recovery
 
 ## [0.1.16] - 2026-04-30
 
