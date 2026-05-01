@@ -47,26 +47,21 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             float currentFuel = cargo.getFuel();
             float maxFuel = cargo.getMaxFuel();
             float maxAllowedFuel = Math.max(maxFuel * 0.8f, maxFuel - 500f);
-            float fuelSpace = maxAllowedFuel - currentFuel;
-            if (fuelSpace < 0) fuelSpace = 0;
+            float fuelSpace = Math.max(0, maxAllowedFuel - currentFuel);
 
             float fuelToProduce = Math.min(fuelNeeded, fuelSpace);
 
             if (fuelToProduce > 0) {
                 float volatilesRequired = fuelToProduce / MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
-                float maxVolatilesWithBudget = totalCredits / MobileRefiningPlugin.VOLATILES_PRICE;
                 float availableVolatiles = cargo.getCommodityQuantity("volatiles");
                 float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
-                float volatilesToProcess = Math.min(volatilesRequired, Math.min(maxVolatilesWithBudget, volatilesAvailableForProcessing));
+                float budgetByFuelSpace = volatilesRequired * MobileRefiningPlugin.VOLATILES_PRICE;
+                float budgetByVolatiles = volatilesAvailableForProcessing * MobileRefiningPlugin.VOLATILES_PRICE;
+                float effectiveBudget = Math.min(totalCredits, Math.min(budgetByFuelSpace, budgetByVolatiles));
 
-                if (volatilesToProcess > 0) {
-                    float fuelProduced = volatilesToProcess * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
-                    cargo.removeCommodity("volatiles", volatilesToProcess);
-                    cargo.addFuel(fuelProduced);
-                }
-
-                valueSpentOnVolatiles = volatilesToProcess * MobileRefiningPlugin.VOLATILES_PRICE;
-                Global.getLogger(this.getClass()).info("DEBUG: volatilesToProcess=" + volatilesToProcess + " fuelToProduce=" + fuelToProduce);
+                valueSpentOnVolatiles = effectiveBudget - processResource(cargo, effectiveBudget,
+                    "volatiles", MobileRefiningPlugin.VOLATILES_PRICE,
+                    "fuel", MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO);
             } else {
                 valueSpentOnVolatiles = 0;
             }
@@ -97,23 +92,19 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         float currentFuel = cargo.getFuel();
         float maxFuel = cargo.getMaxFuel();
         float maxAllowedFuel = Math.max(maxFuel * 0.8f, maxFuel - 500f);
-        float fuelSpace = maxAllowedFuel - currentFuel;
-        if (fuelSpace < 0) fuelSpace = 0;
+        float fuelSpace = Math.max(0, maxAllowedFuel - currentFuel);
 
         if (fuelSpace > 0 && remainingBudget > 0) {
             float volatilesRequired = fuelSpace / MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
-            float maxVolatilesWithBudget = remainingBudget / MobileRefiningPlugin.VOLATILES_PRICE;
             float availableVolatiles = cargo.getCommodityQuantity("volatiles");
             float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
-            float volatilesToProcess = Math.min(volatilesRequired, Math.min(maxVolatilesWithBudget, volatilesAvailableForProcessing));
-
-            if (volatilesToProcess > 0) {
-                float fuelProduced = volatilesToProcess * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
-                cargo.removeCommodity("volatiles", volatilesToProcess);
-                cargo.addFuel(fuelProduced);
-                remainingBudget -= volatilesToProcess * MobileRefiningPlugin.VOLATILES_PRICE;
-                if (remainingBudget < 0) remainingBudget = 0;
-            }
+            float budgetByFuelSpace = volatilesRequired * MobileRefiningPlugin.VOLATILES_PRICE;
+            float budgetByVolatiles = volatilesAvailableForProcessing * MobileRefiningPlugin.VOLATILES_PRICE;
+            float effectiveBudget = Math.min(remainingBudget, Math.min(budgetByFuelSpace, budgetByVolatiles));
+            float volatilesSpent = effectiveBudget - processResource(cargo, effectiveBudget,
+                "volatiles", MobileRefiningPlugin.VOLATILES_PRICE,
+                "fuel", MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO);
+            remainingBudget -= volatilesSpent;
         }
 
         remainingBudget = processResource(cargo, remainingBudget,

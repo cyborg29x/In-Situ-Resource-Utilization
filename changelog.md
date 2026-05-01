@@ -7,6 +7,7 @@ All notable changes to this mod will be documented in this file.
 - Refactored metal to supplies to use the processResource() method
   - Fixed budget tracking bug
 - Supplies production now aware of increased usage from readiness and hull recovery
+- Both fuel production steps now using processResource()
 
 ## [0.1.16] - 2026-04-30
 
