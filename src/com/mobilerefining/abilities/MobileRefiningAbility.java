@@ -156,18 +156,9 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             }
         }
 
-        float availableMetals = cargo.getCommodityQuantity("metals");
-        if (availableMetals > 0 && remainingBudget > 0) {
-            float maxMetalsWithBudget = remainingBudget / MobileRefiningPlugin.METAL_PRICE;
-            float metalsToProcess = Math.min(availableMetals, maxMetalsWithBudget);
-            if (metalsToProcess > 0) {
-                float suppliesProduced = metalsToProcess * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
-                cargo.removeCommodity("metals", metalsToProcess);
-                cargo.addCommodity("supplies", suppliesProduced);
-                remainingBudget -= metalsToProcess * MobileRefiningPlugin.METAL_PRICE;
-                if (remainingBudget < 0) remainingBudget = 0;
-            }
-        }
+        remainingBudget = processResource(cargo, remainingBudget,
+            "metals", MobileRefiningPlugin.METAL_PRICE,
+            "supplies", MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
 
         float remainingBudgetAfterOre = processResource(cargo, remainingBudget,
             "ore", MobileRefiningPlugin.ORE_PRICE,

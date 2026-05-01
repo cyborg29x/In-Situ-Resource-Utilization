@@ -2,6 +2,10 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.17] - 2026-05-01
+
+- Refactored metal to supplies to use the processResource() method
+
 ## [0.1.16] - 2026-04-30
 
 - Replaced fractional tracking with direct float cargo operations
