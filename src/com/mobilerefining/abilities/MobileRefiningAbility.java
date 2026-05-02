@@ -68,6 +68,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         }
 
         float remainingCredits = totalCredits - valueSpentOnVolatiles;
+        if (remainingCredits <= 0) return;
 
         float supplyNeed = calculateSupplyNeed(fleet, days, cargo);
 
@@ -79,6 +80,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             "metals", MobileRefiningPlugin.METAL_PRICE,
             "supplies", MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
         remainingBudget -= metalsSpent;
+        if (remainingBudget <= 0) return;
 
         float metalSuppliesProduced = metalsSpent / MobileRefiningPlugin.METAL_PRICE * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
         float remainingNeed = Math.max(0, supplyNeed - metalSuppliesProduced);
@@ -87,13 +89,14 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         remainingBudget -= processResource(cargo, budgetForTransplutonics,
             "rare_metals", MobileRefiningPlugin.TRANSPLUTONICS_PRICE,
             "supplies", MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO);
+        if (remainingBudget <= 0) return;
 
         float currentFuel = cargo.getFuel();
         float maxFuel = cargo.getMaxFuel();
         float maxAllowedFuel = Math.max(maxFuel * 0.8f, maxFuel - 500f);
         float fuelSpace = Math.max(0, maxAllowedFuel - currentFuel);
 
-        if (fuelSpace > 0 && remainingBudget > 0) {
+        if (fuelSpace > 0) {
             float volatilesRequired = fuelSpace / MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
             float availableVolatiles = cargo.getCommodityQuantity("volatiles");
             float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
@@ -104,18 +107,22 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 "volatiles", MobileRefiningPlugin.VOLATILES_PRICE,
                 "fuel", MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO);
         }
+        if (remainingBudget <= 0) return;
 
         remainingBudget -= processResource(cargo, remainingBudget,
             "metals", MobileRefiningPlugin.METAL_PRICE,
             "supplies", MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
+        if (remainingBudget <= 0) return;
 
         float remainingBudgetAfterOre = remainingBudget - processResource(cargo, remainingBudget,
             "ore", MobileRefiningPlugin.ORE_PRICE,
             "metals", MobileRefiningPlugin.ORE_TO_METAL_RATIO);
+        if (remainingBudgetAfterOre <= 0) return;
 
         float remainingBudgetAfterTransplutonics = remainingBudgetAfterOre - processResource(cargo, remainingBudgetAfterOre,
             "rare_ore", MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE,
             "rare_metals", MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO);
+        if (remainingBudgetAfterTransplutonics <= 0) return;
 
         processResource(cargo, remainingBudgetAfterTransplutonics,
             "organics", MobileRefiningPlugin.ORGANICS_PRICE,
@@ -148,12 +155,14 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             String inputCommodity, float inputPrice,
             String outputCommodity, float outputRatio) {
 
+        float available = cargo.getCommodityQuantity(inputCommodity);
+        if (available <= 0) return 0f;
+
         float inputToProcess = 0f;
         if (budget > 0) {
             inputToProcess = budget / inputPrice;
         }
 
-        float available = cargo.getCommodityQuantity(inputCommodity);
         float maxToProcess = Math.min(inputToProcess, available);
         if (maxToProcess > 0) {
             cargo.removeCommodity(inputCommodity, maxToProcess);
