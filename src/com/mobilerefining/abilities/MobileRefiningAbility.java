@@ -37,10 +37,9 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         CargoAPI cargo = fleet.getCargo();
 
-        float totalCredits = totalBudget * days;
-        float valueSpentOnVolatiles = 0f;
+        float processingCapacity = totalBudget * days;
 
-        if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f && totalCredits > 0) {
+        if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f && processingCapacity > 0) {
             float dailyFuelConsumption = Misc.getFuelPerDay(fleet, fleet.getCurrBurnLevel());
             float fuelNeeded = dailyFuelConsumption * days;
 
@@ -57,39 +56,34 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
                 float budgetByFuelSpace = volatilesRequired * MobileRefiningPlugin.VOLATILES_PRICE;
                 float budgetByVolatiles = volatilesAvailableForProcessing * MobileRefiningPlugin.VOLATILES_PRICE;
-                float effectiveBudget = Math.min(totalCredits, Math.min(budgetByFuelSpace, budgetByVolatiles));
+                float effectiveBudget = Math.min(processingCapacity, Math.min(budgetByFuelSpace, budgetByVolatiles));
 
-                valueSpentOnVolatiles = processResource(cargo, effectiveBudget,
+                processingCapacity -= processResource(cargo, effectiveBudget,
                     "volatiles", MobileRefiningPlugin.VOLATILES_PRICE,
                     "fuel", MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO);
-            } else {
-                valueSpentOnVolatiles = 0;
             }
         }
 
-        float remainingCredits = totalCredits - valueSpentOnVolatiles;
-        if (remainingCredits <= 0) return;
+        if (processingCapacity <= 0) return;
 
         float supplyNeed = calculateSupplyNeed(fleet, days, cargo);
 
-        float remainingBudget = remainingCredits;
-
         float maxMetalBudget = supplyNeed / MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO * MobileRefiningPlugin.METAL_PRICE;
-        float budgetForMetals = Math.min(remainingBudget, maxMetalBudget);
+        float budgetForMetals = Math.min(processingCapacity, maxMetalBudget);
         float metalsSpent = processResource(cargo, budgetForMetals,
             "metals", MobileRefiningPlugin.METAL_PRICE,
             "supplies", MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
-        remainingBudget -= metalsSpent;
-        if (remainingBudget <= 0) return;
+        processingCapacity -= metalsSpent;
+        if (processingCapacity <= 0) return;
 
         float metalSuppliesProduced = metalsSpent / MobileRefiningPlugin.METAL_PRICE * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
         float remainingNeed = Math.max(0, supplyNeed - metalSuppliesProduced);
         float maxTransplutonicsBudget = remainingNeed / MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
-        float budgetForTransplutonics = Math.min(remainingBudget, maxTransplutonicsBudget);
-        remainingBudget -= processResource(cargo, budgetForTransplutonics,
+        float budgetForTransplutonics = Math.min(processingCapacity, maxTransplutonicsBudget);
+        processingCapacity -= processResource(cargo, budgetForTransplutonics,
             "rare_metals", MobileRefiningPlugin.TRANSPLUTONICS_PRICE,
             "supplies", MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO);
-        if (remainingBudget <= 0) return;
+        if (processingCapacity <= 0) return;
 
         float currentFuel = cargo.getFuel();
         float maxFuel = cargo.getMaxFuel();
@@ -102,29 +96,29 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
             float budgetByFuelSpace = volatilesRequired * MobileRefiningPlugin.VOLATILES_PRICE;
             float budgetByVolatiles = volatilesAvailableForProcessing * MobileRefiningPlugin.VOLATILES_PRICE;
-            float effectiveBudget = Math.min(remainingBudget, Math.min(budgetByFuelSpace, budgetByVolatiles));
-            remainingBudget -= processResource(cargo, effectiveBudget,
+            float effectiveBudget = Math.min(processingCapacity, Math.min(budgetByFuelSpace, budgetByVolatiles));
+            processingCapacity -= processResource(cargo, effectiveBudget,
                 "volatiles", MobileRefiningPlugin.VOLATILES_PRICE,
                 "fuel", MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO);
         }
-        if (remainingBudget <= 0) return;
+        if (processingCapacity <= 0) return;
 
-        remainingBudget -= processResource(cargo, remainingBudget,
+        processingCapacity -= processResource(cargo, processingCapacity,
             "metals", MobileRefiningPlugin.METAL_PRICE,
             "supplies", MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
-        if (remainingBudget <= 0) return;
+        if (processingCapacity <= 0) return;
 
-        float remainingBudgetAfterOre = remainingBudget - processResource(cargo, remainingBudget,
+        processingCapacity -= processResource(cargo, processingCapacity,
             "ore", MobileRefiningPlugin.ORE_PRICE,
             "metals", MobileRefiningPlugin.ORE_TO_METAL_RATIO);
-        if (remainingBudgetAfterOre <= 0) return;
+        if (processingCapacity <= 0) return;
 
-        float remainingBudgetAfterTransplutonics = remainingBudgetAfterOre - processResource(cargo, remainingBudgetAfterOre,
+        processingCapacity -= processResource(cargo, processingCapacity,
             "rare_ore", MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE,
             "rare_metals", MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO);
-        if (remainingBudgetAfterTransplutonics <= 0) return;
+        if (processingCapacity <= 0) return;
 
-        processResource(cargo, remainingBudgetAfterTransplutonics,
+        processResource(cargo, processingCapacity,
             "organics", MobileRefiningPlugin.ORGANICS_PRICE,
             "domestic_goods", MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO);
     }
@@ -268,51 +262,48 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
                 float metalValue = availableMetals * MobileRefiningPlugin.METAL_PRICE;
                 float transplutonicsValue = availableTransplutonics * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
-                float totalValue = metalValue + transplutonicsValue;
 
                 float metalUsableForSupplies = 0f;
                 float transplutonicsUsableForSupplies = 0f;
 
-                if (totalValue > 0) {
-                    float supplyBudget = budget;
-
-                    float metalBudgetForSupplies = Math.min(supplyBudget, metalValue);
+                float suppliesFromMetal = 0f;
+                if (metalValue + transplutonicsValue > 0) {
+                    float metalBudgetForSupplies = Math.min(budget, metalValue);
                     metalUsableForSupplies = Math.min(availableMetals, metalBudgetForSupplies / MobileRefiningPlugin.METAL_PRICE);
-                    float suppliesFromMetalOnly = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+                    suppliesFromMetal = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
 
                     float supplyNeed = calculateSupplyNeed(fleet, 1f, cargo);
-                    float remainingSupplyNeed = supplyNeed - suppliesFromMetalOnly;
+                    float remainingSupplyNeed = supplyNeed - suppliesFromMetal;
                     if (remainingSupplyNeed > 0 && availableTransplutonics > 0) {
-                        float transplutonicsBudgetForSupplies = Math.min(supplyBudget - metalBudgetForSupplies, transplutonicsValue);
+                        float transplutonicsBudgetForSupplies = Math.min(budget - metalBudgetForSupplies, transplutonicsValue);
                         transplutonicsUsableForSupplies = Math.min(availableTransplutonics, transplutonicsBudgetForSupplies / MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
                     }
                 }
 
-                float suppliesFromMetal = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
                 float suppliesFromTransplutonics = transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO;
 
-                float remainingBudget = budget - metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE - transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
-                if (remainingBudget < 0) remainingBudget = 0;
-                float maxOrePerDay = remainingBudget / MobileRefiningPlugin.ORE_PRICE;
+                float processingCapacity = budget - metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE - transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
+                if (processingCapacity < 0) processingCapacity = 0;
+                float maxOrePerDay = processingCapacity / MobileRefiningPlugin.ORE_PRICE;
                 float metalPerDay = maxOrePerDay * MobileRefiningPlugin.ORE_TO_METAL_RATIO;
-                float remainingBudgetAfterOre = remainingBudget - maxOrePerDay * MobileRefiningPlugin.ORE_PRICE;
-                if (remainingBudgetAfterOre < 0) remainingBudgetAfterOre = 0;
-                float maxTransplutonicOrePerDay = remainingBudgetAfterOre / MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
+                processingCapacity -= maxOrePerDay * MobileRefiningPlugin.ORE_PRICE;
+                if (processingCapacity < 0) processingCapacity = 0;
+                float maxTransplutonicOrePerDay = processingCapacity / MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
                 float transplutonicsPerDay = maxTransplutonicOrePerDay * MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO;
 
-                float remainingBudgetAfterTransplutonics = remainingBudgetAfterOre - maxTransplutonicOrePerDay * MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
-                if (remainingBudgetAfterTransplutonics < 0) remainingBudgetAfterTransplutonics = 0;
+                processingCapacity -= maxTransplutonicOrePerDay * MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
+                if (processingCapacity < 0) processingCapacity = 0;
 
                 float maxVolatilesPerDay = 0f;
                 float fuelPerDay = 0f;
                 if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f) {
-                    maxVolatilesPerDay = remainingBudgetAfterTransplutonics / MobileRefiningPlugin.VOLATILES_PRICE;
+                    maxVolatilesPerDay = processingCapacity / MobileRefiningPlugin.VOLATILES_PRICE;
                     fuelPerDay = maxVolatilesPerDay * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
                 }
 
-                float remainingBudgetAfterVolatiles = remainingBudgetAfterTransplutonics - maxVolatilesPerDay * MobileRefiningPlugin.VOLATILES_PRICE;
-                if (remainingBudgetAfterVolatiles < 0) remainingBudgetAfterVolatiles = 0;
-                float maxOrganicsPerDay = remainingBudgetAfterVolatiles / MobileRefiningPlugin.ORGANICS_PRICE;
+                processingCapacity -= maxVolatilesPerDay * MobileRefiningPlugin.VOLATILES_PRICE;
+                if (processingCapacity < 0) processingCapacity = 0;
+                float maxOrganicsPerDay = processingCapacity / MobileRefiningPlugin.ORGANICS_PRICE;
                 float domesticGoodsPerDay = maxOrganicsPerDay * MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO;
 
                 float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
