@@ -13,6 +13,7 @@ All notable changes to this mod will be documented in this file.
 - Added early exits to applyEffect() for when budget is empty
 - Added early exit to processResource() for when input commodity is unavailable
 - Merged several variables to reduce total count
+- Extracted duplicate code into calculateFuelSpace()
 
 ## [0.1.16] - 2026-04-30
 

@@ -43,10 +43,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             float dailyFuelConsumption = Misc.getFuelPerDay(fleet, fleet.getCurrBurnLevel());
             float fuelNeeded = dailyFuelConsumption * days;
 
-            float currentFuel = cargo.getFuel();
-            float maxFuel = cargo.getMaxFuel();
-            float maxAllowedFuel = Math.max(maxFuel * 0.8f, maxFuel - 500f);
-            float fuelSpace = Math.max(0, maxAllowedFuel - currentFuel);
+            float fuelSpace = calculateFuelSpace(cargo);
 
             float fuelToProduce = Math.min(fuelNeeded, fuelSpace);
 
@@ -85,10 +82,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             "supplies", MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO);
         if (processingCapacity <= 0) return;
 
-        float currentFuel = cargo.getFuel();
-        float maxFuel = cargo.getMaxFuel();
-        float maxAllowedFuel = Math.max(maxFuel * 0.8f, maxFuel - 500f);
-        float fuelSpace = Math.max(0, maxAllowedFuel - currentFuel);
+        float fuelSpace = calculateFuelSpace(cargo);
 
         if (fuelSpace > 0) {
             float volatilesRequired = fuelSpace / MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
@@ -197,6 +191,13 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         }
 
         return totalBudget;
+    }
+
+    private float calculateFuelSpace(CargoAPI cargo) {
+        float currentFuel = cargo.getFuel();
+        float maxFuel = cargo.getMaxFuel();
+        float maxAllowedFuel = Math.max(maxFuel * 0.8f, maxFuel - 500f);
+        return Math.max(0, maxAllowedFuel - currentFuel);
     }
 
     @Override
