@@ -2,6 +2,13 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.18] - 2026-05-03
+
+- Implemented mission tracking to determine reserved commodity amounts
+  - Wrote new file MissionCargoTracker.java
+  - Reflection-based attempt rewritten as Starsector API forbids reflection for scripts
+  - Optimizations applied due to high per-frame cost
+
 ## [0.1.17] - 2026-05-01
 
 - Refactored metal to supplies to use the processResource() method

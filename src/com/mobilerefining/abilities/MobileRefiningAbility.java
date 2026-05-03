@@ -8,7 +8,9 @@ import com.fs.starfarer.api.impl.campaign.abilities.BaseToggleAbility;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import com.mobilerefining.plugins.MobileRefiningPlugin;
+import com.mobilerefining.utils.MissionCargoTracker;
 import java.awt.Color;
+import java.util.Map;
 
 public class MobileRefiningAbility extends BaseToggleAbility {
 
@@ -36,6 +38,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         }
 
         CargoAPI cargo = fleet.getCargo();
+        Map<String, Float> reservedCommodities = MissionCargoTracker.getAllReservedCommodities();
 
         float processingCapacity = totalBudget * days;
 
@@ -49,13 +52,13 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
             if (fuelToProduce > 0) {
                 float volatilesRequired = fuelToProduce / MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
-                float availableVolatiles = cargo.getCommodityQuantity("volatiles");
+                float availableVolatiles = MissionCargoTracker.getAvailableQuantity("volatiles", cargo, reservedCommodities);
                 float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
                 float budgetByFuelSpace = volatilesRequired * MobileRefiningPlugin.VOLATILES_PRICE;
                 float budgetByVolatiles = volatilesAvailableForProcessing * MobileRefiningPlugin.VOLATILES_PRICE;
                 float effectiveBudget = Math.min(processingCapacity, Math.min(budgetByFuelSpace, budgetByVolatiles));
 
-                processingCapacity -= processResource(cargo, effectiveBudget,
+                processingCapacity -= processResource(cargo, effectiveBudget, reservedCommodities,
                     "volatiles", MobileRefiningPlugin.VOLATILES_PRICE,
                     "fuel", MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO);
             }
@@ -67,7 +70,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         float maxMetalBudget = supplyNeed / MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO * MobileRefiningPlugin.METAL_PRICE;
         float budgetForMetals = Math.min(processingCapacity, maxMetalBudget);
-        float metalsSpent = processResource(cargo, budgetForMetals,
+        float metalsSpent = processResource(cargo, budgetForMetals, reservedCommodities,
             "metals", MobileRefiningPlugin.METAL_PRICE,
             "supplies", MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
         processingCapacity -= metalsSpent;
@@ -77,7 +80,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         float remainingNeed = Math.max(0, supplyNeed - metalSuppliesProduced);
         float maxTransplutonicsBudget = remainingNeed / MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
         float budgetForTransplutonics = Math.min(processingCapacity, maxTransplutonicsBudget);
-        processingCapacity -= processResource(cargo, budgetForTransplutonics,
+        processingCapacity -= processResource(cargo, budgetForTransplutonics, reservedCommodities,
             "rare_metals", MobileRefiningPlugin.TRANSPLUTONICS_PRICE,
             "supplies", MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO);
         if (processingCapacity <= 0) return;
@@ -86,33 +89,33 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         if (fuelSpace > 0) {
             float volatilesRequired = fuelSpace / MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
-            float availableVolatiles = cargo.getCommodityQuantity("volatiles");
+            float availableVolatiles = MissionCargoTracker.getAvailableQuantity("volatiles", cargo, reservedCommodities);
             float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
             float budgetByFuelSpace = volatilesRequired * MobileRefiningPlugin.VOLATILES_PRICE;
             float budgetByVolatiles = volatilesAvailableForProcessing * MobileRefiningPlugin.VOLATILES_PRICE;
             float effectiveBudget = Math.min(processingCapacity, Math.min(budgetByFuelSpace, budgetByVolatiles));
-            processingCapacity -= processResource(cargo, effectiveBudget,
+            processingCapacity -= processResource(cargo, effectiveBudget, reservedCommodities,
                 "volatiles", MobileRefiningPlugin.VOLATILES_PRICE,
                 "fuel", MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO);
         }
         if (processingCapacity <= 0) return;
 
-        processingCapacity -= processResource(cargo, processingCapacity,
+        processingCapacity -= processResource(cargo, processingCapacity, reservedCommodities,
             "metals", MobileRefiningPlugin.METAL_PRICE,
             "supplies", MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
         if (processingCapacity <= 0) return;
 
-        processingCapacity -= processResource(cargo, processingCapacity,
+        processingCapacity -= processResource(cargo, processingCapacity, reservedCommodities,
             "ore", MobileRefiningPlugin.ORE_PRICE,
             "metals", MobileRefiningPlugin.ORE_TO_METAL_RATIO);
         if (processingCapacity <= 0) return;
 
-        processingCapacity -= processResource(cargo, processingCapacity,
+        processingCapacity -= processResource(cargo, processingCapacity, reservedCommodities,
             "rare_ore", MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE,
             "rare_metals", MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO);
         if (processingCapacity <= 0) return;
 
-        processResource(cargo, processingCapacity,
+        processResource(cargo, processingCapacity, reservedCommodities,
             "organics", MobileRefiningPlugin.ORGANICS_PRICE,
             "domestic_goods", MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO);
     }
@@ -139,11 +142,11 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         return totalDeploymentCost;
     }
 
-    private float processResource(CargoAPI cargo, float budget,
+    private float processResource(CargoAPI cargo, float budget, Map<String, Float> reservedCommodities,
             String inputCommodity, float inputPrice,
             String outputCommodity, float outputRatio) {
 
-        float available = cargo.getCommodityQuantity(inputCommodity);
+        float available = MissionCargoTracker.getAvailableQuantity(inputCommodity, cargo, reservedCommodities);
         if (available <= 0) return 0f;
 
         float inputToProcess = 0f;
@@ -255,11 +258,18 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
 
                 CargoAPI cargo = fleet.getCargo();
-                float availableMetals = cargo.getCommodityQuantity("metals");
-                float availableTransplutonics = cargo.getCommodityQuantity("rare_metals");
-                float availableOre = cargo.getCommodityQuantity("ore");
-                float availableOrganics = cargo.getCommodityQuantity("organics");
-                float availableVolatiles = cargo.getCommodityQuantity("volatiles");
+                Map<String, Float> reservedCommodities = MissionCargoTracker.getAllReservedCommodities();
+                float availableMetals = MissionCargoTracker.getAvailableQuantity("metals", cargo, reservedCommodities);
+                float availableTransplutonics = MissionCargoTracker.getAvailableQuantity("rare_metals", cargo, reservedCommodities);
+                float availableOre = MissionCargoTracker.getAvailableQuantity("ore", cargo, reservedCommodities);
+                float availableOrganics = MissionCargoTracker.getAvailableQuantity("organics", cargo, reservedCommodities);
+                float availableVolatiles = MissionCargoTracker.getAvailableQuantity("volatiles", cargo, reservedCommodities);
+
+                float reservedMetals = cargo.getCommodityQuantity("metals") - availableMetals;
+                float reservedTransplutonics = cargo.getCommodityQuantity("rare_metals") - availableTransplutonics;
+                float reservedOre = cargo.getCommodityQuantity("ore") - availableOre;
+                float reservedOrganics = cargo.getCommodityQuantity("organics") - availableOrganics;
+                float reservedVolatiles = cargo.getCommodityQuantity("volatiles") - availableVolatiles;
 
                 float metalValue = availableMetals * MobileRefiningPlugin.METAL_PRICE;
                 float transplutonicsValue = availableTransplutonics * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
@@ -332,6 +342,26 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 if (fleet.isInHyperspace() && availableVolatiles > 0 && fuelPerDay > 0) {
                     tooltip.addPara("Max volatiles processed: %s/day", opad, highlight, String.format("%.1f", maxVolatilesPerDay));
                     tooltip.addPara("Max fuel output: %s/day (80%% cap)", opad, highlight, String.format("%.1f", fuelPerDay));
+                }
+
+                if (reservedMetals > 0 || reservedTransplutonics > 0 || reservedOre > 0 || reservedOrganics > 0 || reservedVolatiles > 0) {
+                    tooltip.addPara("---", opad);
+                    tooltip.addPara("Reserved for missions:", opad);
+                    if (reservedMetals > 0) {
+                        tooltip.addPara("  Metals: %s", opad, highlight, String.format("%.1f", reservedMetals));
+                    }
+                    if (reservedTransplutonics > 0) {
+                        tooltip.addPara("  Transplutonics: %s", opad, highlight, String.format("%.1f", reservedTransplutonics));
+                    }
+                    if (reservedOre > 0) {
+                        tooltip.addPara("  Ore: %s", opad, highlight, String.format("%.1f", reservedOre));
+                    }
+                    if (reservedOrganics > 0) {
+                        tooltip.addPara("  Organics: %s", opad, highlight, String.format("%.1f", reservedOrganics));
+                    }
+                    if (reservedVolatiles > 0) {
+                        tooltip.addPara("  Volatiles: %s", opad, highlight, String.format("%.1f", reservedVolatiles));
+                    }
                 }
             } else {
                 tooltip.addPara("No ships with Mobile Refinery hullmod in fleet.", opad, highlight);
