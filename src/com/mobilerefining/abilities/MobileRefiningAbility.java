@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.impl.campaign.abilities.BaseToggleAbility;
+import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import com.mobilerefining.plugins.MobileRefiningPlugin;
@@ -248,8 +249,13 @@ public class MobileRefiningAbility extends BaseToggleAbility {
     public void createTooltip(TooltipMakerAPI tooltip, boolean expanded) {
         float opad = 10f;
         Color highlight = Misc.getHighlightColor();
+        Color gray = Misc.getGrayColor();
 
-        tooltip.addTitle(getSpec().getName());
+        String status = isActive() ? " (on)" : " (off)";
+
+        LabelAPI title = tooltip.addTitle(getSpec().getName() + status);
+        title.highlightLast(status);
+        title.setHighlightColor(gray);
 
         tooltip.addPara("Convert ore to metal and transplutonic ore to transplutonics, then to supplies using ships equipped with the Mobile Refinery hullmod.", opad);
 
