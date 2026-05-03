@@ -13,6 +13,7 @@ public class MobileRefineryHullMod extends BaseHullMod {
     public static final float SMOD_CARGO_SPACE_TAKEN = 0.15f;
     public static final float SMOD_CARGO_REDUCTION = 0.20f;
     public static final int SMOD_BURN_PENALTY = 1;
+    public static final float SMOD_SUPPLY_PENALTY = 10f;
 
     public static float getCargoCompensationFactor(ShipAPI ship) {
         boolean sMod = ship != null && ship.getVariant().getSMods().contains("mobile_refinery");
@@ -53,6 +54,7 @@ public class MobileRefineryHullMod extends BaseHullMod {
         if (sMod) {
             cargoReduction = SMOD_CARGO_REDUCTION;
             stats.getMaxBurnLevel().modifyFlat(id, -SMOD_BURN_PENALTY);
+            stats.getSuppliesPerMonth().modifyPercent(id, SMOD_SUPPLY_PENALTY);
         } else {
             cargoReduction = MobileRefiningPlugin.CARGO_SPACE_TAKEN;
         }
@@ -75,6 +77,7 @@ public class MobileRefineryHullMod extends BaseHullMod {
         tooltip.addPara("Processing capacity increased to %s of cargo capacity.", opad, Misc.getHighlightColor(), processPercent);
         tooltip.addPara("Cargo capacity reduction increased to %s.", opad, Misc.getHighlightColor(), reductionPercent);
         tooltip.addPara("Base burn level reduced by %s.", opad, Misc.getHighlightColor(), String.valueOf(SMOD_BURN_PENALTY));
+        tooltip.addPara("Supply use increased by %s.", opad, Misc.getHighlightColor(), String.valueOf((int) SMOD_SUPPLY_PENALTY) + "%");
     }
 
     @Override

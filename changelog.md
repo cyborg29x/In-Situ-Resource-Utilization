@@ -6,6 +6,7 @@ All notable changes to this mod will be documented in this file.
 
 - Implemented S-modding penalties to the hullmod
   - Fixed various bugs in original implementation
+  - Added +10% supply use to S-mod stats
 
 ## [0.1.18] - 2026-05-03
 
