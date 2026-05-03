@@ -6,6 +6,7 @@ import com.fs.starfarer.api.combat.ShipAPI;
 import com.fs.starfarer.api.combat.ShipAPI.HullSize;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
+import java.awt.Color;
 import com.mobilerefining.plugins.MobileRefiningPlugin;
 
 public class MobileRefineryHullMod extends BaseHullMod {
@@ -65,19 +66,28 @@ public class MobileRefineryHullMod extends BaseHullMod {
     public void addPostDescriptionSection(TooltipMakerAPI tooltip, HullSize hullSize, ShipAPI ship, float width, boolean isForModSpec) {
         float opad = 10f;
         String percent = String.format("%.0f%%", MobileRefiningPlugin.CARGO_SPACE_TAKEN * 100f);
-        tooltip.addPara("Allows this ship to contribute %s of its cargo capacity as resource processing capacity for mobile refining operations.", opad, Misc.getHighlightColor(), percent);
-        tooltip.addPara("As it is installed into the ship's cargo space, it reduces its cargo capacity by %s. This reduction does not apply to processing capacity.", opad, Misc.getHighlightColor(), percent);
+        
+        Color yellow = Misc.getHighlightColor();
+        tooltip.addPara("Enables the %s processing of certain resources into more compact and useful forms. Unlike that of planetside industries, the machinery is optimized for compactness and power-efficiency and therefore, resources are processed in a way that merely %s their total value.", 
+            opad, new Color[] {yellow, yellow}, "onboard", "preserves");
+        
+        tooltip.addPara("Turns %s of the ship's cargo capacity into resource processing capacity. %s of cargo is equivalent to %s's worth processed %s. As the equipment is installed into the ship's cargo spaces, it reduces cargo capacity by %s. This reduction does %s apply to processing capacity. Usage of surplus flux grid power does not confer additional effects to installed equipment.", 
+            opad * 0.5f, new Color[] {yellow, yellow, yellow, yellow, yellow, yellow}, 
+            percent, "One unit", "one credit", "per day", percent, "not");
+        
+        tooltip.addPara("Capable of processing volatiles into fuel, metal and transplutonics into supplies, raw ores into metal and transplutonics, respectively, and organics into domestic goods only.", opad);
     }
 
     @Override
     public void addSModEffectSection(TooltipMakerAPI tooltip, HullSize hullSize, ShipAPI ship, float width, boolean isForModSpec, boolean isForBuildInList) {
         float opad = 10f;
+        
+        tooltip.addPara("Permanent integration into ship systems allows for seamless operation of processing machinery at the cost of increased strain on the flux grid. Requires dedicated power conduits that divert power from existing systems.", opad);
+        
         String processPercent = String.format("%.0f%%", SMOD_CARGO_SPACE_TAKEN * 100f);
         String reductionPercent = String.format("%.0f%%", SMOD_CARGO_REDUCTION * 100f);
-        tooltip.addPara("Processing capacity increased to %s of cargo capacity.", opad, Misc.getHighlightColor(), processPercent);
-        tooltip.addPara("Cargo capacity reduction increased to %s.", opad, Misc.getHighlightColor(), reductionPercent);
-        tooltip.addPara("Base burn level reduced by %s.", opad, Misc.getHighlightColor(), String.valueOf(SMOD_BURN_PENALTY));
-        tooltip.addPara("Supply use increased by %s.", opad, Misc.getHighlightColor(), String.valueOf((int) SMOD_SUPPLY_PENALTY) + "%");
+        tooltip.addPara("Processing capacity increased to %s of ship's cargo capacity. Cargo capacity reduction increased to %s. Base burn level reduced by %s. Supply consumption increased by %s.", 
+            opad * 0.5f, Misc.getHighlightColor(), processPercent, reductionPercent, String.valueOf(SMOD_BURN_PENALTY), String.valueOf((int) SMOD_SUPPLY_PENALTY) + "%");
     }
 
     @Override
@@ -98,6 +108,9 @@ public class MobileRefineryHullMod extends BaseHullMod {
         }
         if (index == 2) {
             return String.valueOf(SMOD_BURN_PENALTY);
+        }
+        if (index == 3) {
+            return String.valueOf((int) SMOD_SUPPLY_PENALTY) + "%";
         }
         return null;
     }
