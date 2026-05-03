@@ -2,6 +2,11 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.19] - 2026-05-03
+
+- Implemented S-modding penalties to the hullmod
+  - Fixed various bugs in original implementation
+
 ## [0.1.18] - 2026-05-03
 
 - Implemented mission tracking to determine reserved commodity amounts

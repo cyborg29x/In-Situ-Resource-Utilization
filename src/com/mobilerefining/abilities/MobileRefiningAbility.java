@@ -9,6 +9,7 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import com.mobilerefining.plugins.MobileRefiningPlugin;
 import com.mobilerefining.utils.MissionCargoTracker;
+import com.mobilerefining.hullmods.MobileRefineryHullMod;
 import java.awt.Color;
 import java.util.Map;
 
@@ -188,8 +189,10 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             if (member.getVariant().hasHullMod(HULLMOD_ID)) {
                 float baseCargo = member.getHullSpec().getCargo();
                 float effectiveCargo = member.getStats().getCargoMod().computeEffective(baseCargo);
-                float compensatedCargo = effectiveCargo * MobileRefiningPlugin.CARGO_COMPENSATION_FACTOR;
-                totalBudget += compensatedCargo * MobileRefiningPlugin.BUDGET_PERCENT;
+                float compensationFactor = MobileRefineryHullMod.getCargoCompensationFactor(member.getStats());
+                float processedCargo = effectiveCargo * compensationFactor;
+                float processingPercent = MobileRefineryHullMod.getProcessingPercent(member.getStats());
+                totalBudget += processedCargo * processingPercent;
             }
         }
 
