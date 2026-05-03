@@ -8,6 +8,8 @@ All notable changes to this mod will be documented in this file.
   - Wrote new file MissionCargoTracker.java
   - Reflection-based attempt rewritten as Starsector API forbids reflection for scripts
   - Optimizations applied due to high per-frame cost
+    - 8 call points per frame optimized to 1
+    - Early pre-filtering of irrelevant intel entries
 
 ## [0.1.17] - 2026-05-01
 

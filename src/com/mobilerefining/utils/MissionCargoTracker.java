@@ -8,12 +8,21 @@ import com.fs.starfarer.api.impl.campaign.intel.ProcurementMissionIntel;
 import com.fs.starfarer.api.impl.campaign.intel.bar.events.DeliveryMissionIntel;
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class MissionCargoTracker {
 
     private static final String CHEAP_COMMODITY_CLASS = "com.fs.starfarer.api.impl.campaign.missions.CheapCommodityMission";
+
+    private static final Set<String> MISSION_CLASS_PREFIXES = new HashSet<>();
+    static {
+        MISSION_CLASS_PREFIXES.add("DeliveryMissionIntel");
+        MISSION_CLASS_PREFIXES.add("ProcurementMissionIntel");
+        MISSION_CLASS_PREFIXES.add("CheapCommodityMission");
+    }
 
     private static final Map<String, String> DISPLAY_NAME_TO_ID = new HashMap<>();
     static {
@@ -52,6 +61,10 @@ public class MissionCargoTracker {
             List<IntelInfoPlugin> intelList = Global.getSector().getIntelManager().getIntel();
 
             for (IntelInfoPlugin intel : intelList) {
+                if (!isRelevantMissionIntel(intel)) {
+                    continue;
+                }
+
                 if (!isActiveMission(intel)) {
                     continue;
                 }
@@ -69,6 +82,16 @@ public class MissionCargoTracker {
         }
 
         return result;
+    }
+
+    private static boolean isRelevantMissionIntel(IntelInfoPlugin intel) {
+        String className = intel.getClass().getName();
+        for (String prefix : MISSION_CLASS_PREFIXES) {
+            if (className.contains(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isActiveMission(IntelInfoPlugin intel) {
