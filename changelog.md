@@ -9,6 +9,9 @@ All notable changes to this mod will be documented in this file.
   - Added +10% supply use to S-mod stats
 - Hullmod tooltip reworked
 - Added status indicator to ability tooltip's title
+- Ability tooltip reworked
+  - Split into sections
+  - Added section listing ongoing resource processing steps
 
 ## [0.1.18] - 2026-05-03
 

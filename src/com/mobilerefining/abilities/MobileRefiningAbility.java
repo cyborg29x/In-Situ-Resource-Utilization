@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.impl.campaign.abilities.BaseToggleAbility;
+import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
@@ -245,11 +246,13 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         return true;
     }
 
-    @Override
+@Override
     public void createTooltip(TooltipMakerAPI tooltip, boolean expanded) {
         float opad = 10f;
         Color highlight = Misc.getHighlightColor();
         Color gray = Misc.getGrayColor();
+        Color blue = Misc.getBasePlayerColor();
+        Color darkBlue = Misc.getDarkPlayerColor();
 
         String status = isActive() ? " (on)" : " (off)";
 
@@ -257,22 +260,103 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         title.highlightLast(status);
         title.setHighlightColor(gray);
 
-        tooltip.addPara("Convert ore to metal and transplutonic ore to transplutonics, then to supplies using ships equipped with the Mobile Refinery hullmod.", opad);
+        tooltip.addPara("Enables the onboard processing of certain resources into more compact and useful forms, in a way that preserves their total value.", opad);
 
         CampaignFleetAPI fleet = getFleet();
         if (fleet != null) {
             float budget = getTotalProcessingBudget(fleet);
             if (budget > 0) {
-                tooltip.addPara("Processing budget: %s credits/day", opad, highlight, String.format("%.1f", budget));
                 float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
+                float baseSupplyCost = calculateBaseSupplyConsumption(fleet);
+                float repairSupplyCost = dailySupplyConsumption - baseSupplyCost;
+                float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
+                float fuelPerDay = fleet.isInHyperspace() ? Misc.getFuelPerDay(fleet, fleet.getCurrBurnLevel()) : 0f;
+                float burnLevel = fleet.getCurrBurnLevel();
+
+                tooltip.addSectionHeading("Fleet statistics", blue, darkBlue, Alignment.MID, opad);
+
+                tooltip.addPara("Processing capacity of %s credits per day.", opad, highlight, String.format("%.1f", budget));
+
+                if (repairSupplyCost > 0) {
+                    tooltip.addPara("Supply demand of %s units per day (+ %s repairs).", opad, highlight, String.format("%.1f", dailySupplyConsumption), String.format("%.1f", repairSupplyCost));
+                } else {
+                    tooltip.addPara("Supply demand of %s units per day.", opad, highlight, String.format("%.1f", dailySupplyConsumption));
+                }
+
+                tooltip.addPara("A total of %s units of supplies will be stockpiled for military ship deployment.", opad, highlight, String.format("%.1f", militaryDeploymentCost));
+
+                if (fuelPerDay > 0) {
+                    tooltip.addPara("Fuel usage of %s units per day at a burn level of %s.", opad, highlight, String.format("%.1f", fuelPerDay), String.valueOf(burnLevel));
+                }
+
+                tooltip.addSectionHeading("Resource processing", blue, darkBlue, Alignment.MID, opad);
+
+                tooltip.addPara("Resources are processed in the following order:", opad * 0.5f);
 
                 CargoAPI cargo = fleet.getCargo();
                 Map<String, Float> reservedCommodities = MissionCargoTracker.getAllReservedCommodities();
+                float availableVolatiles = MissionCargoTracker.getAvailableQuantity("volatiles", cargo, reservedCommodities);
                 float availableMetals = MissionCargoTracker.getAvailableQuantity("metals", cargo, reservedCommodities);
                 float availableTransplutonics = MissionCargoTracker.getAvailableQuantity("rare_metals", cargo, reservedCommodities);
                 float availableOre = MissionCargoTracker.getAvailableQuantity("ore", cargo, reservedCommodities);
                 float availableOrganics = MissionCargoTracker.getAvailableQuantity("organics", cargo, reservedCommodities);
-                float availableVolatiles = MissionCargoTracker.getAvailableQuantity("volatiles", cargo, reservedCommodities);
+
+                float processingCapacity = budget;
+
+                if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f && availableVolatiles > 0 && processingCapacity > 0) {
+                    float volatilesBudget = Math.min(processingCapacity, availableVolatiles * MobileRefiningPlugin.VOLATILES_PRICE);
+                    float volatilesProcessed = volatilesBudget / MobileRefiningPlugin.VOLATILES_PRICE;
+                    float fuelProduced = volatilesProcessed * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
+                    tooltip.addPara("%s credits allocated to processing %s volatiles into %s fuel per day", opad, highlight, 
+                        String.format("%.0f", volatilesBudget), String.format("%.1f", volatilesProcessed), String.format("%.0f", fuelProduced));
+                    processingCapacity -= volatilesBudget;
+                }
+
+                if (availableMetals > 0 && processingCapacity > 0) {
+                    float metalBudget = Math.min(processingCapacity, availableMetals * MobileRefiningPlugin.METAL_PRICE);
+                    float metalsUsed = metalBudget / MobileRefiningPlugin.METAL_PRICE;
+                    float suppliesProduced = metalsUsed * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
+                    tooltip.addPara("%s credits allocated to processing %s metals into %s supplies per day", opad, highlight,
+                        String.format("%.0f", metalBudget), String.format("%.1f", metalsUsed), String.format("%.1f", suppliesProduced));
+                    processingCapacity -= metalBudget;
+                }
+
+                if (availableTransplutonics > 0 && processingCapacity > 0) {
+                    float transBudget = Math.min(processingCapacity, availableTransplutonics * MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
+                    float transUsed = transBudget / MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
+                    float suppliesProduced = transUsed * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO;
+                    tooltip.addPara("%s credits allocated to processing %s transplutonics into %s supplies per day", opad, highlight,
+                        String.format("%.0f", transBudget), String.format("%.1f", transUsed), String.format("%.1f", suppliesProduced));
+                    processingCapacity -= transBudget;
+                }
+
+                if (availableOre > 0 && processingCapacity > 0) {
+                    float oreBudget = Math.min(processingCapacity, availableOre * MobileRefiningPlugin.ORE_PRICE);
+                    float oreProcessed = oreBudget / MobileRefiningPlugin.ORE_PRICE;
+                    float metalsProduced = oreProcessed * MobileRefiningPlugin.ORE_TO_METAL_RATIO;
+                    tooltip.addPara("%s credits allocated to processing %s ore into %s metals per day", opad, highlight,
+                        String.format("%.0f", oreBudget), String.format("%.1f", oreProcessed), String.format("%.1f", metalsProduced));
+                    processingCapacity -= oreBudget;
+                }
+
+                float transOreAvailable = MissionCargoTracker.getAvailableQuantity("rare_ore", cargo, reservedCommodities);
+                if (transOreAvailable > 0 && processingCapacity > 0) {
+                    float transOreBudget = Math.min(processingCapacity, transOreAvailable * MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE);
+                    float transOreProcessed = transOreBudget / MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
+                    float transProduced = transOreProcessed * MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO;
+                    tooltip.addPara("%s credits allocated to processing %s transplutonic ore into %s transplutonics per day", opad, highlight,
+                        String.format("%.0f", transOreBudget), String.format("%.1f", transOreProcessed), String.format("%.1f", transProduced));
+                    processingCapacity -= transOreBudget;
+                }
+
+                if (availableOrganics > 0 && processingCapacity > 0) {
+                    float organicsBudget = Math.min(processingCapacity, availableOrganics * MobileRefiningPlugin.ORGANICS_PRICE);
+                    float organicsProcessed = organicsBudget / MobileRefiningPlugin.ORGANICS_PRICE;
+                    float goodsProduced = organicsProcessed * MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO;
+                    tooltip.addPara("%s credits allocated to processing %s organics into %s domestic goods per day", opad, highlight,
+                        String.format("%.0f", organicsBudget), String.format("%.1f", organicsProcessed), String.format("%.1f", goodsProduced));
+                    processingCapacity -= organicsBudget;
+                }
 
                 float reservedMetals = cargo.getCommodityQuantity("metals") - availableMetals;
                 float reservedTransplutonics = cargo.getCommodityQuantity("rare_metals") - availableTransplutonics;
@@ -280,82 +364,9 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 float reservedOrganics = cargo.getCommodityQuantity("organics") - availableOrganics;
                 float reservedVolatiles = cargo.getCommodityQuantity("volatiles") - availableVolatiles;
 
-                float metalValue = availableMetals * MobileRefiningPlugin.METAL_PRICE;
-                float transplutonicsValue = availableTransplutonics * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
-
-                float metalUsableForSupplies = 0f;
-                float transplutonicsUsableForSupplies = 0f;
-
-                float suppliesFromMetal = 0f;
-                if (metalValue + transplutonicsValue > 0) {
-                    float metalBudgetForSupplies = Math.min(budget, metalValue);
-                    metalUsableForSupplies = Math.min(availableMetals, metalBudgetForSupplies / MobileRefiningPlugin.METAL_PRICE);
-                    suppliesFromMetal = metalUsableForSupplies * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
-
-                    float supplyNeed = calculateSupplyNeed(fleet, 1f, cargo);
-                    float remainingSupplyNeed = supplyNeed - suppliesFromMetal;
-                    if (remainingSupplyNeed > 0 && availableTransplutonics > 0) {
-                        float transplutonicsBudgetForSupplies = Math.min(budget - metalBudgetForSupplies, transplutonicsValue);
-                        transplutonicsUsableForSupplies = Math.min(availableTransplutonics, transplutonicsBudgetForSupplies / MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
-                    }
-                }
-
-                float suppliesFromTransplutonics = transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO;
-
-                float processingCapacity = budget - metalUsableForSupplies * MobileRefiningPlugin.METAL_PRICE - transplutonicsUsableForSupplies * MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
-                if (processingCapacity < 0) processingCapacity = 0;
-                float maxOrePerDay = processingCapacity / MobileRefiningPlugin.ORE_PRICE;
-                float metalPerDay = maxOrePerDay * MobileRefiningPlugin.ORE_TO_METAL_RATIO;
-                processingCapacity -= maxOrePerDay * MobileRefiningPlugin.ORE_PRICE;
-                if (processingCapacity < 0) processingCapacity = 0;
-                float maxTransplutonicOrePerDay = processingCapacity / MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
-                float transplutonicsPerDay = maxTransplutonicOrePerDay * MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO;
-
-                processingCapacity -= maxTransplutonicOrePerDay * MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
-                if (processingCapacity < 0) processingCapacity = 0;
-
-                float maxVolatilesPerDay = 0f;
-                float fuelPerDay = 0f;
-                if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f) {
-                    maxVolatilesPerDay = processingCapacity / MobileRefiningPlugin.VOLATILES_PRICE;
-                    fuelPerDay = maxVolatilesPerDay * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
-                }
-
-                processingCapacity -= maxVolatilesPerDay * MobileRefiningPlugin.VOLATILES_PRICE;
-                if (processingCapacity < 0) processingCapacity = 0;
-                float maxOrganicsPerDay = processingCapacity / MobileRefiningPlugin.ORGANICS_PRICE;
-                float domesticGoodsPerDay = maxOrganicsPerDay * MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO;
-
-                float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
-                float baseSupplyCost = calculateBaseSupplyConsumption(fleet);
-                float repairSupplyCost = dailySupplyConsumption - baseSupplyCost;
-                if (repairSupplyCost > 0) {
-                    tooltip.addPara("Supply demand: %s/day (+ %s/day repairs + %s deployment)", opad, highlight, String.format("%.1f", dailySupplyConsumption), String.format("%.1f", repairSupplyCost), String.format("%.1f", militaryDeploymentCost));
-                } else {
-                    tooltip.addPara("Supply demand: %s/day (+ %s deployment)", opad, highlight, String.format("%.1f", dailySupplyConsumption), String.format("%.1f", militaryDeploymentCost));
-                }
-                tooltip.addPara("Max supplies from metal: %s/day", opad, highlight, String.format("%.1f", suppliesFromMetal));
-                tooltip.addPara("Max supplies from transplutonics: %s/day", opad, highlight, String.format("%.1f", suppliesFromTransplutonics));
-                if (availableOre > 0 && metalPerDay > 0) {
-                    tooltip.addPara("Max ore processed: %s/day", opad, highlight, String.format("%.1f", maxOrePerDay));
-                    tooltip.addPara("Max metal output: %s/day", opad, highlight, String.format("%.1f", metalPerDay));
-                }
-                if (transplutonicsPerDay > 0) {
-                    tooltip.addPara("Max transplutonic ore processed: %s/day", opad, highlight, String.format("%.1f", maxTransplutonicOrePerDay));
-                    tooltip.addPara("Max transplutonics output: %s/day", opad, highlight, String.format("%.1f", transplutonicsPerDay));
-                }
-                if (availableOrganics > 0 && domesticGoodsPerDay > 0) {
-                    tooltip.addPara("Max organics processed: %s/day", opad, highlight, String.format("%.1f", maxOrganicsPerDay));
-                    tooltip.addPara("Max domestic goods output: %s/day", opad, highlight, String.format("%.1f", domesticGoodsPerDay));
-                }
-                if (fleet.isInHyperspace() && availableVolatiles > 0 && fuelPerDay > 0) {
-                    tooltip.addPara("Max volatiles processed: %s/day", opad, highlight, String.format("%.1f", maxVolatilesPerDay));
-                    tooltip.addPara("Max fuel output: %s/day (80%% cap)", opad, highlight, String.format("%.1f", fuelPerDay));
-                }
-
                 if (reservedMetals > 0 || reservedTransplutonics > 0 || reservedOre > 0 || reservedOrganics > 0 || reservedVolatiles > 0) {
-                    tooltip.addPara("---", opad);
-                    tooltip.addPara("Reserved for missions:", opad);
+                    tooltip.addSectionHeading("Reserved commodities", blue, darkBlue, Alignment.MID, opad);
+                    tooltip.addPara("The following resources are reserved for active missions:", opad);
                     if (reservedMetals > 0) {
                         tooltip.addPara("  Metals: %s", opad, highlight, String.format("%.1f", reservedMetals));
                     }
@@ -376,5 +387,5 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 tooltip.addPara("No ships with Mobile Refinery hullmod in fleet.", opad, highlight);
             }
         }
-    }
+}
 }
