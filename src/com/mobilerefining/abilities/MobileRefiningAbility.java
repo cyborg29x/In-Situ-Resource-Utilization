@@ -3,6 +3,7 @@ package com.mobilerefining.abilities;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.CargoAPI;
+import com.fs.starfarer.api.campaign.econ.CommoditySpecAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.impl.campaign.abilities.BaseToggleAbility;
 import com.fs.starfarer.api.ui.Alignment;
@@ -13,6 +14,10 @@ import com.mobilerefining.plugins.MobileRefiningPlugin;
 import com.mobilerefining.utils.MissionCargoTracker;
 import com.mobilerefining.hullmods.MobileRefineryHullMod;
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 public class MobileRefiningAbility extends BaseToggleAbility {
@@ -208,6 +213,55 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         return Math.max(0, maxAllowedFuel - currentFuel);
     }
 
+    private String formatAmount(float amount) {
+        if (amount == (int) amount) {
+            return String.format("%d", (int) amount);
+        } else {
+            return String.format("%.1f", amount);
+        }
+    }
+
+    private String formatTimeEstimate(float timeDays) {
+        if (timeDays < 1f) {
+            return "less than a day";
+        } else if (timeDays < 7f) {
+            return timeDays < 2f ? "a day" : (int)Math.ceil(timeDays) + " days";
+        } else if (timeDays < 14f) {
+            return "one week";
+        } else if (timeDays < 30f) {
+            return (int)Math.ceil(timeDays / 7f) + " weeks";
+        } else if (timeDays < 365f) {
+            return timeDays < 60f ? "a month" : (int)Math.ceil(timeDays / 30f) + " months";
+        } else {
+            return "more than a year";
+        }
+    }
+
+    private String getCommodityName(String commodityId) {
+        CommoditySpecAPI spec = Global.getSettings().getCommoditySpec(commodityId);
+        return spec != null ? spec.getName() : commodityId;
+    }
+
+    private static class ResourceEntry {
+        float timeDays;
+        String timeEstimate;
+        String inputAmount;
+        String inputCommodity;
+        String outputAmount;
+        String outputCommodity;
+        String outputPerDay;
+
+        ResourceEntry(float timeDays, String timeEstimate, String inputAmount, String inputCommodity, String outputAmount, String outputCommodity, String outputPerDay) {
+            this.timeDays = timeDays;
+            this.timeEstimate = timeEstimate;
+            this.inputAmount = inputAmount;
+            this.inputCommodity = inputCommodity;
+            this.outputAmount = outputAmount;
+            this.outputCommodity = outputCommodity;
+            this.outputPerDay = outputPerDay;
+        }
+    }
+
     @Override
     public boolean isUsable() {
         return super.isUsable() && canActivate();
@@ -291,8 +345,6 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
                 tooltip.addSectionHeading("Resource processing", blue, darkBlue, Alignment.MID, opad);
 
-                tooltip.addPara("Resources are processed in the following order:", opad * 0.5f);
-
                 CargoAPI cargo = fleet.getCargo();
                 Map<String, Float> reservedCommodities = MissionCargoTracker.getAllReservedCommodities();
                 float availableVolatiles = MissionCargoTracker.getAvailableQuantity("volatiles", cargo, reservedCommodities);
@@ -300,62 +352,106 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                 float availableTransplutonics = MissionCargoTracker.getAvailableQuantity("rare_metals", cargo, reservedCommodities);
                 float availableOre = MissionCargoTracker.getAvailableQuantity("ore", cargo, reservedCommodities);
                 float availableOrganics = MissionCargoTracker.getAvailableQuantity("organics", cargo, reservedCommodities);
-
-                float processingCapacity = budget;
-
-                if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f && availableVolatiles > 0 && processingCapacity > 0) {
-                    float volatilesBudget = Math.min(processingCapacity, availableVolatiles * MobileRefiningPlugin.VOLATILES_PRICE);
-                    float volatilesProcessed = volatilesBudget / MobileRefiningPlugin.VOLATILES_PRICE;
-                    float fuelProduced = volatilesProcessed * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO;
-                    tooltip.addPara("%s credits allocated to processing %s volatiles into %s fuel per day", opad, highlight, 
-                        String.format("%.0f", volatilesBudget), String.format("%.1f", volatilesProcessed), String.format("%.0f", fuelProduced));
-                    processingCapacity -= volatilesBudget;
-                }
-
-                if (availableMetals > 0 && processingCapacity > 0) {
-                    float metalBudget = Math.min(processingCapacity, availableMetals * MobileRefiningPlugin.METAL_PRICE);
-                    float metalsUsed = metalBudget / MobileRefiningPlugin.METAL_PRICE;
-                    float suppliesProduced = metalsUsed * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO;
-                    tooltip.addPara("%s credits allocated to processing %s metals into %s supplies per day", opad, highlight,
-                        String.format("%.0f", metalBudget), String.format("%.1f", metalsUsed), String.format("%.1f", suppliesProduced));
-                    processingCapacity -= metalBudget;
-                }
-
-                if (availableTransplutonics > 0 && processingCapacity > 0) {
-                    float transBudget = Math.min(processingCapacity, availableTransplutonics * MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
-                    float transUsed = transBudget / MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
-                    float suppliesProduced = transUsed * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO;
-                    tooltip.addPara("%s credits allocated to processing %s transplutonics into %s supplies per day", opad, highlight,
-                        String.format("%.0f", transBudget), String.format("%.1f", transUsed), String.format("%.1f", suppliesProduced));
-                    processingCapacity -= transBudget;
-                }
-
-                if (availableOre > 0 && processingCapacity > 0) {
-                    float oreBudget = Math.min(processingCapacity, availableOre * MobileRefiningPlugin.ORE_PRICE);
-                    float oreProcessed = oreBudget / MobileRefiningPlugin.ORE_PRICE;
-                    float metalsProduced = oreProcessed * MobileRefiningPlugin.ORE_TO_METAL_RATIO;
-                    tooltip.addPara("%s credits allocated to processing %s ore into %s metals per day", opad, highlight,
-                        String.format("%.0f", oreBudget), String.format("%.1f", oreProcessed), String.format("%.1f", metalsProduced));
-                    processingCapacity -= oreBudget;
-                }
-
                 float transOreAvailable = MissionCargoTracker.getAvailableQuantity("rare_ore", cargo, reservedCommodities);
-                if (transOreAvailable > 0 && processingCapacity > 0) {
-                    float transOreBudget = Math.min(processingCapacity, transOreAvailable * MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE);
-                    float transOreProcessed = transOreBudget / MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
-                    float transProduced = transOreProcessed * MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO;
-                    tooltip.addPara("%s credits allocated to processing %s transplutonic ore into %s transplutonics per day", opad, highlight,
-                        String.format("%.0f", transOreBudget), String.format("%.1f", transOreProcessed), String.format("%.1f", transProduced));
-                    processingCapacity -= transOreBudget;
+
+                float remainingCapacity = budget;
+                List<ResourceEntry> entries = new ArrayList<>();
+
+                if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f && availableVolatiles > 0 && remainingCapacity > 0) {
+                    float volatilesBudget = Math.min(remainingCapacity, availableVolatiles * MobileRefiningPlugin.VOLATILES_PRICE);
+                    float dailyRate = remainingCapacity / MobileRefiningPlugin.VOLATILES_PRICE;
+                    float timeDays = dailyRate > 0 ? availableVolatiles / dailyRate : 0f;
+                    String timeEstimate = formatTimeEstimate(timeDays);
+                    String inputAmount = formatAmount(availableVolatiles);
+                    String outputAmount = formatAmount(availableVolatiles * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO);
+                    String inputCommodity = getCommodityName("volatiles");
+                    String outputCommodity = getCommodityName("fuel");
+                    String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * MobileRefiningPlugin.VOLATILES_TO_FUEL_RATIO : 0f);
+                    entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
+                    remainingCapacity -= volatilesBudget;
                 }
 
-                if (availableOrganics > 0 && processingCapacity > 0) {
-                    float organicsBudget = Math.min(processingCapacity, availableOrganics * MobileRefiningPlugin.ORGANICS_PRICE);
-                    float organicsProcessed = organicsBudget / MobileRefiningPlugin.ORGANICS_PRICE;
-                    float goodsProduced = organicsProcessed * MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO;
-                    tooltip.addPara("%s credits allocated to processing %s organics into %s domestic goods per day", opad, highlight,
-                        String.format("%.0f", organicsBudget), String.format("%.1f", organicsProcessed), String.format("%.1f", goodsProduced));
-                    processingCapacity -= organicsBudget;
+                if (availableMetals > 0 && remainingCapacity > 0) {
+                    float metalBudget = Math.min(remainingCapacity, availableMetals * MobileRefiningPlugin.METAL_PRICE);
+                    float dailyRate = remainingCapacity / MobileRefiningPlugin.METAL_PRICE;
+                    float timeDays = dailyRate > 0 ? availableMetals / dailyRate : 0f;
+                    String timeEstimate = formatTimeEstimate(timeDays);
+                    String inputAmount = formatAmount(availableMetals);
+                    String outputAmount = formatAmount(availableMetals * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO);
+                    String inputCommodity = getCommodityName("metals");
+                    String outputCommodity = getCommodityName("supplies");
+                    String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * MobileRefiningPlugin.METAL_TO_SUPPLIES_RATIO : 0f);
+                    entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
+                    remainingCapacity -= metalBudget;
+                }
+
+                if (availableTransplutonics > 0 && remainingCapacity > 0) {
+                    float transBudget = Math.min(remainingCapacity, availableTransplutonics * MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
+                    float dailyRate = remainingCapacity / MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
+                    float timeDays = dailyRate > 0 ? availableTransplutonics / dailyRate : 0f;
+                    String timeEstimate = formatTimeEstimate(timeDays);
+                    String inputAmount = formatAmount(availableTransplutonics);
+                    String outputAmount = formatAmount(availableTransplutonics * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO);
+                    String inputCommodity = getCommodityName("rare_metals");
+                    String outputCommodity = getCommodityName("supplies");
+                    String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * MobileRefiningPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO : 0f);
+                    entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
+                    remainingCapacity -= transBudget;
+                }
+
+                if (availableOre > 0 && remainingCapacity > 0) {
+                    float oreBudget = Math.min(remainingCapacity, availableOre * MobileRefiningPlugin.ORE_PRICE);
+                    float dailyRate = remainingCapacity / MobileRefiningPlugin.ORE_PRICE;
+                    float timeDays = dailyRate > 0 ? availableOre / dailyRate : 0f;
+                    String timeEstimate = formatTimeEstimate(timeDays);
+                    String inputAmount = formatAmount(availableOre);
+                    String outputAmount = formatAmount(availableOre * MobileRefiningPlugin.ORE_TO_METAL_RATIO);
+                    String inputCommodity = getCommodityName("ore");
+                    String outputCommodity = getCommodityName("metals");
+                    String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * MobileRefiningPlugin.ORE_TO_METAL_RATIO : 0f);
+                    entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
+                    remainingCapacity -= oreBudget;
+                }
+
+                if (transOreAvailable > 0 && remainingCapacity > 0) {
+                    float transOreBudget = Math.min(remainingCapacity, transOreAvailable * MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE);
+                    float dailyRate = remainingCapacity / MobileRefiningPlugin.TRANSPLUTONIC_ORE_PRICE;
+                    float timeDays = dailyRate > 0 ? transOreAvailable / dailyRate : 0f;
+                    String timeEstimate = formatTimeEstimate(timeDays);
+                    String inputAmount = formatAmount(transOreAvailable);
+                    String outputAmount = formatAmount(transOreAvailable * MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO);
+                    String inputCommodity = getCommodityName("rare_ore");
+                    String outputCommodity = getCommodityName("rare_metals");
+                    String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * MobileRefiningPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO : 0f);
+                    entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
+                    remainingCapacity -= transOreBudget;
+                }
+
+                if (availableOrganics > 0 && remainingCapacity > 0) {
+                    float organicsBudget = Math.min(remainingCapacity, availableOrganics * MobileRefiningPlugin.ORGANICS_PRICE);
+                    float dailyRate = remainingCapacity / MobileRefiningPlugin.ORGANICS_PRICE;
+                    float timeDays = dailyRate > 0 ? availableOrganics / dailyRate : 0f;
+                    String timeEstimate = formatTimeEstimate(timeDays);
+                    String inputAmount = formatAmount(availableOrganics);
+                    String outputAmount = formatAmount(availableOrganics * MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO);
+                    String inputCommodity = getCommodityName("organics");
+                    String outputCommodity = getCommodityName("domestic_goods");
+                    String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * MobileRefiningPlugin.ORGANICS_TO_DOMESTIC_GOODS_RATIO : 0f);
+                    entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
+                    remainingCapacity -= organicsBudget;
+                }
+
+                Collections.sort(entries, Comparator.comparingDouble(e -> e.timeDays));
+
+                for (ResourceEntry entry : entries) {
+                    String sentence;
+                    if (entry.timeDays >= 1f) {
+                        sentence = "In %s, %s " + entry.inputCommodity.toLowerCase() + " will process into %s " + entry.outputCommodity.toLowerCase() + ", at a rate of %s per day.";
+                        tooltip.addPara(sentence, opad, highlight, entry.timeEstimate, entry.inputAmount, entry.outputAmount, entry.outputPerDay);
+                    } else {
+                        sentence = "In %s, %s " + entry.inputCommodity.toLowerCase() + " will process into %s " + entry.outputCommodity.toLowerCase() + ".";
+                        tooltip.addPara(sentence, opad, highlight, entry.timeEstimate, entry.inputAmount, entry.outputAmount);
+                    }
                 }
 
                 float reservedMetals = cargo.getCommodityQuantity("metals") - availableMetals;

@@ -12,6 +12,8 @@ All notable changes to this mod will be documented in this file.
 - Ability tooltip reworked
   - Split into sections
   - Added section listing ongoing resource processing steps
+  - Resource processing section reworked
+  - Various bugs fixed from initial implementation
 
 ## [0.1.18] - 2026-05-03
 
