@@ -385,9 +385,15 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                     remainingCapacity -= metalBudget;
                 }
 
-                if (availableTransplutonics > 0 && remainingCapacity > 0) {
-                    float transBudget = Math.min(remainingCapacity, availableTransplutonics * MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
-                    float dailyRate = remainingCapacity / MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
+                float metalBudgetForTransCalc = 0f;
+                if (availableMetals > 0) {
+                    metalBudgetForTransCalc = Math.min(remainingCapacity, availableMetals * MobileRefiningPlugin.METAL_PRICE);
+                }
+                float capacityAfterMetals = remainingCapacity - metalBudgetForTransCalc;
+
+                if (availableTransplutonics > 0 && capacityAfterMetals > 0) {
+                    float transBudget = Math.min(capacityAfterMetals, availableTransplutonics * MobileRefiningPlugin.TRANSPLUTONICS_PRICE);
+                    float dailyRate = capacityAfterMetals / MobileRefiningPlugin.TRANSPLUTONICS_PRICE;
                     float timeDays = dailyRate > 0 ? availableTransplutonics / dailyRate : 0f;
                     String timeEstimate = formatTimeEstimate(timeDays);
                     String inputAmount = formatAmount(availableTransplutonics);

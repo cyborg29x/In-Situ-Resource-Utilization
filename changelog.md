@@ -14,6 +14,7 @@ All notable changes to this mod will be documented in this file.
   - Added section listing ongoing resource processing steps
   - Resource processing section reworked
   - Various bugs fixed from initial implementation
+  - Transplutonics now only producing Supplies up to daily usage in the tooltip
 
 ## [0.1.18] - 2026-05-03
 
