@@ -8,6 +8,7 @@ All notable changes to this mod will be documented in this file.
   - Commodity names cached as a static once-generated map on game load
   - Reserved commodity mission intel scanning cached per-frame
   - Fleet data cached per-frame
+- Hullmod now properly registering as logistics type with refitting restrictions
 
 ## [0.1.20] - 2026-05-05
 

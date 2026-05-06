@@ -1,6 +1,6 @@
 package com.mobilerefining.hullmods;
 
-import com.fs.starfarer.api.combat.BaseHullMod;
+import com.fs.starfarer.api.impl.hullmods.BaseLogisticsHullMod;
 import com.fs.starfarer.api.combat.MutableShipStatsAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
 import com.fs.starfarer.api.combat.ShipAPI.HullSize;
@@ -9,7 +9,7 @@ import com.fs.starfarer.api.util.Misc;
 import java.awt.Color;
 import com.mobilerefining.plugins.MobileRefiningPlugin;
 
-public class MobileRefineryHullMod extends BaseHullMod {
+public class MobileRefineryHullMod extends BaseLogisticsHullMod {
 
     public static final float SMOD_CARGO_SPACE_TAKEN = 0.15f;
     public static final float SMOD_CARGO_REDUCTION = 0.20f;
