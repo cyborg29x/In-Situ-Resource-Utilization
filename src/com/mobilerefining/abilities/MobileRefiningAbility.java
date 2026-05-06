@@ -3,7 +3,6 @@ package com.mobilerefining.abilities;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.CargoAPI;
-import com.fs.starfarer.api.campaign.econ.CommoditySpecAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.impl.campaign.abilities.BaseToggleAbility;
 import com.fs.starfarer.api.ui.Alignment;
@@ -24,6 +23,31 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
     public static final String HULLMOD_ID = "mobile_refinery";
 
+    private static FleetDataCache cachedFleetData = null;
+
+    private static class FleetDataCache {
+        float processingBudget;
+        float baseSupplyCost;
+        float deploymentCost;
+        long timestamp;
+    }
+
+    private FleetDataCache getFleetData(CampaignFleetAPI fleet) {
+        long currentTimestamp = Global.getSector().getClock().getTimestamp();
+        if (cachedFleetData != null && cachedFleetData.timestamp == currentTimestamp) {
+            return cachedFleetData;
+        }
+
+        FleetDataCache cache = new FleetDataCache();
+        cache.processingBudget = calculateProcessingBudget(fleet);
+        cache.baseSupplyCost = calculateBaseSupplyCost(fleet);
+        cache.deploymentCost = calculateDeploymentCost(fleet);
+        cache.timestamp = currentTimestamp;
+
+        cachedFleetData = cache;
+        return cache;
+    }
+
     @Override
     protected void activateImpl() {
     }
@@ -40,7 +64,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
             return;
         }
 
-        float totalBudget = getTotalProcessingBudget(fleet);
+        float totalBudget = getFleetData(fleet).processingBudget;
         if (totalBudget <= 0) {
             return;
         }
@@ -132,7 +156,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         return fleet.getLogistics().getShipMaintenanceSupplyCost();
     }
 
-    private float calculateBaseSupplyConsumption(CampaignFleetAPI fleet) {
+    private float calculateBaseSupplyCost(CampaignFleetAPI fleet) {
         float totalSupplies = 0f;
         for (FleetMemberAPI member : fleet.getFleetData().getMembersListCopy()) {
             totalSupplies += member.getStats().getSuppliesPerMonth().getModifiedValue() / 30f;
@@ -140,7 +164,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         return totalSupplies;
     }
 
-    private float calculateMilitaryShipDeploymentSupplyCost(CampaignFleetAPI fleet) {
+    private float calculateDeploymentCost(CampaignFleetAPI fleet) {
         float totalDeploymentCost = 0f;
         for (FleetMemberAPI member : fleet.getFleetData().getMembersListCopy()) {
             if (!member.getVariant().isCivilian()) {
@@ -183,13 +207,13 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
     private float calculateSupplyNeed(CampaignFleetAPI fleet, float days, CargoAPI cargo) {
         float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
-        float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
+        float militaryDeploymentCost = getFleetData(fleet).deploymentCost;
         float currentSupplies = cargo.getSupplies();
         float deploymentCostNeeded = Math.max(0, militaryDeploymentCost - currentSupplies);
         return (dailySupplyConsumption * days) + deploymentCostNeeded;
     }
 
-    private float getTotalProcessingBudget(CampaignFleetAPI fleet) {
+    private float calculateProcessingBudget(CampaignFleetAPI fleet) {
         float totalBudget = 0f;
 
         for (FleetMemberAPI member : fleet.getFleetData().getMembersListCopy()) {
@@ -238,8 +262,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
     }
 
     private String getCommodityName(String commodityId) {
-        CommoditySpecAPI spec = Global.getSettings().getCommoditySpec(commodityId);
-        return spec != null ? spec.getName() : commodityId;
+        return MobileRefiningPlugin.getCommodityName(commodityId);
     }
 
     private static class ResourceEntry {
@@ -282,7 +305,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
         CampaignFleetAPI fleet = getFleet();
         if (fleet == null) return false;
 
-        return getTotalProcessingBudget(fleet) > 0f;
+        return getFleetData(fleet).processingBudget > 0f;
     }
 
     @Override
@@ -318,13 +341,14 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
         CampaignFleetAPI fleet = getFleet();
         if (fleet != null) {
-            float budget = getTotalProcessingBudget(fleet);
+            float budget = getFleetData(fleet).processingBudget;
             if (budget > 0) {
                 CargoAPI cargo = fleet.getCargo();
                 float dailySupplyConsumption = calculateDailySupplyConsumption(fleet);
-                float baseSupplyCost = calculateBaseSupplyConsumption(fleet);
+                FleetDataCache fleetData = getFleetData(fleet);
+                float baseSupplyCost = fleetData.baseSupplyCost;
                 float repairSupplyCost = dailySupplyConsumption - baseSupplyCost;
-                float militaryDeploymentCost = calculateMilitaryShipDeploymentSupplyCost(fleet);
+                float militaryDeploymentCost = fleetData.deploymentCost;
                 float fuelPerDay = fleet.isInHyperspace() ? Misc.getFuelPerDay(fleet, fleet.getCurrBurnLevel()) : 0f;
 
                 tooltip.addSectionHeading("Fleet statistics", blue, darkBlue, Alignment.MID, opad);

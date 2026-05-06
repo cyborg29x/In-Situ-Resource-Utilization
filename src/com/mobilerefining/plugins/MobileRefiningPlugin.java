@@ -3,11 +3,15 @@ package com.mobilerefining.plugins;
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.CommoditySpecAPI;
+import java.util.HashMap;
+import java.util.Map;
 import org.json.JSONObject;
 
 public class MobileRefiningPlugin extends BaseModPlugin {
 
     public static final String ABILITY_ID = "mobile_refining";
+
+    private static final Map<String, String> COMMODITY_NAME_CACHE = new HashMap<>();
 
     public static int ORE_PRICE = 10;
     public static int METAL_PRICE = 30;
@@ -31,7 +35,24 @@ public class MobileRefiningPlugin extends BaseModPlugin {
     @Override
     public void onGameLoad(boolean newGame) {
         initPrices();
+        initCommodityNameCache();
         grantAbilityToPlayer();
+    }
+
+    private void initCommodityNameCache() {
+        String[] commodities = {"ore", "metals", "supplies", "rare_metals", "rare_ore",
+                "organics", "domestic_goods", "volatiles", "fuel"};
+        for (String id : commodities) {
+            CommoditySpecAPI spec = Global.getSettings().getCommoditySpec(id);
+            if (spec != null) {
+                COMMODITY_NAME_CACHE.put(id, spec.getName());
+            }
+        }
+    }
+
+    public static String getCommodityName(String commodityId) {
+        String cached = COMMODITY_NAME_CACHE.get(commodityId);
+        return cached != null ? cached : commodityId;
     }
 
     @Override

@@ -17,6 +17,9 @@ public class MissionCargoTracker {
 
     private static final String CHEAP_COMMODITY_CLASS = "com.fs.starfarer.api.impl.campaign.missions.CheapCommodityMission";
 
+    private static Map<String, Float> cachedResult = null;
+    private static long cachedTimestamp = -1;
+
     private static final Set<String> MISSION_CLASS_PREFIXES = new HashSet<>();
     static {
         MISSION_CLASS_PREFIXES.add("DeliveryMissionIntel");
@@ -55,6 +58,11 @@ public class MissionCargoTracker {
     }
 
     public static Map<String, Float> getAllReservedCommodities() {
+        long currentTimestamp = Global.getSector().getClock().getTimestamp();
+        if (cachedResult != null && cachedTimestamp == currentTimestamp) {
+            return cachedResult;
+        }
+
         Map<String, Float> result = new HashMap<>();
 
         try {
@@ -81,6 +89,8 @@ public class MissionCargoTracker {
             Global.getLogger(MissionCargoTracker.class).error("Error tracking mission cargo", e);
         }
 
+        cachedResult = result;
+        cachedTimestamp = currentTimestamp;
         return result;
     }
 
