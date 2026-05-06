@@ -2,6 +2,16 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.20] - 2026-05-05
+
+- Ability tooltip rework concluded
+  - Metal and Transplutonic to Supplies lines now hidden if completely consumed within frame
+  - Corrected month time estimate from 60 to 30 days
+  - All commodity values now rounded down as integers
+  - Significant rewrites of several tooltip lines
+  - Reserved commodities section explanatory text changed to small grey font in vanilla style
+  - Added fleet supply and fuel endurance estimates in fleet statistics section
+
 ## [0.1.19] - 2026-05-03
 
 - Implemented S-modding penalties to the hullmod
@@ -114,11 +124,11 @@ All notable changes to this mod will be documented in this file.
   - Volatiles purchased now based on fuel value, not total budget
   - Processing capped by available budget (totalCredits)
 - Fixed volatiles not being consumed from cargo
-   - Volatiles from cargo now always removed (integer portion)
-   - Fraction tracking properly decremented when using purchased volatiles
+  - Volatiles from cargo now always removed (integer portion)
+  - Fraction tracking properly decremented when using purchased volatiles
 - Simplified volatiles processing logic
-   - Merged volatilesToSpend and volatilesToProcess into single calculation
-   - volatilesFraction now only decreases (removed surplus tracking)
+  - Merged volatilesToSpend and volatilesToProcess into single calculation
+  - volatilesFraction now only decreases (removed surplus tracking)
 
 ## [0.1.12] - 2026-04-27
 
@@ -198,6 +208,7 @@ All notable changes to this mod will be documented in this file.
 - Removed redundant `totalMetalsAvailable` variable, now uses `metalAvailable` consistently
 
 ### Fixed
+
 - Hullmod tooltip spacing now matches vanilla standard
   - Changed padding from 3f to 10f for consistent paragraph spacing
   - Both addPara() calls now use opad = 10f
@@ -209,6 +220,7 @@ All notable changes to this mod will be documented in this file.
 ## [0.1.7] - 2026-04-23
 
 ### Changed
+
 - Hullmod now reduces ship's cargo capacity by 10%
   - Equipment is installed into cargo space, reducing storage capacity
   - Uses getCargoMod().modifyMult() to apply 0.90 multiplier
@@ -221,6 +233,7 @@ All notable changes to this mod will be documented in this file.
   - Percentage symbol included in Java code for proper tooltip highlighting
 
 ### Technical
+
 - Added CARGO_SPACE_TAKEN constant (0.10)
 - Added CARGO_COMPENSATION_FACTOR computed as 1 / (1 - CARGO_SPACE_TAKEN)
 - Hullmod CSV description wrapped in double quotes to preserve commas
@@ -228,6 +241,7 @@ All notable changes to this mod will be documented in this file.
 ## [0.1.6] - 2026-04-22
 
 ### Changed
+
 - Hullmod now uses cargo-based processing budget instead of hull-size-based rates
   - Processing budget = 10% of ship's cargo capacity per day
   - Credits used to process ore at base price (10c)
@@ -238,6 +252,7 @@ All notable changes to this mod will be documented in this file.
   - Uses getCargoMod().computeEffective() instead of base hullSpec cargo
 
 ### Fixed
+
 - Hullmod description now correctly shows "10%" instead of showing hullmod cost percentage
   - Changed Hull_mods.csv description to static 10%
   - getDescriptionParam(0) now returns "10" for 10% display
@@ -246,6 +261,7 @@ All notable changes to this mod will be documented in this file.
   - Budget (credits) converted to ore units before adding to oreFraction
 
 ### Technical
+
 - Removed refineRates from settings.json
   - No longer uses hull-size-based refine rates (CAPITAL/CRUISER/DESTROYER/FRIGATE)
   - Processing now scales directly with cargo capacity
@@ -256,9 +272,11 @@ All notable changes to this mod will be documented in this file.
 ## [0.1.5] - 2026-04-22
 
 ### Added
+
 - Now using Gradle 9.4.1 for .jar compilation
 
 ### Fixed
+
 - Fixed build path configuration for Gradle
   - Configured build.gradle to reference Starsector game JARs directly
   - Uses starfarer.api, starfarer_obf, fs.common_obf, json, and log4j-1.2.9 from game install
@@ -270,6 +288,7 @@ All notable changes to this mod will be documented in this file.
   - Now uses game's bundled json.jar for org.json.JSONObject
 
 ### Technical
+
 - Upgraded Gradle wrapper to version 9.4.1
 - Build produces clean JAR with only compiled Java classes
 - Added .vscode/ folder with tasks.json and settings.json for VS Code development
@@ -279,12 +298,14 @@ All notable changes to this mod will be documented in this file.
 ## [0.1.4] - 2026-04-22
 
 ### Fixed
+
 - Fixed settings.json loading to use proper method
   - Changed from getMergedJSONForMod() to loadJSON() with modId parameter
   - Ensures mod config doesn't accidentally override other mods' settings
   - Properly preserves nested config fields like refineRates
 
 ### Optimized
+
 - Replaced while-loop cargo operations with batch processing
   - Removed ore/metal 1-unit-at-a-time processing in favor of batch operations
   - Single cargo.addCommodity/removeCommodity call per tick instead of multiple
@@ -296,6 +317,7 @@ All notable changes to this mod will be documented in this file.
 ## [0.1.3] - 2026-04-21
 
 ### Fixed
+
 - Fixed IllegalFormatConversionException when displaying tooltip
   - Changed tooltip format specifiers from `%.1f` to `%s` for String highlighting
 - Fixed floating-point precision issues in refining calculations
@@ -307,6 +329,7 @@ All notable changes to this mod will be documented in this file.
   - No ore is consumed until cargo space becomes available
 
 ### Technical
+
 - Added persistent fraction tracking:
   - MobileRefining_oreFraction - stores fractional ore between ticks
   - MobileRefining_metalFraction - stores fractional metal between ticks
@@ -316,6 +339,7 @@ All notable changes to this mod will be documented in this file.
 ## [0.1.2] - 2026-04-21
 
 ### Fixed
+
 - Mobile Refining ability now starts OFF and appears with enabled animation correctly
   - Modified isUsable() to check canActivate() - ability now properly disabled when no ships have hullmod
   - Modified pressButton() to use base class activate()/deactivate() methods instead of manual turnedOn toggle
@@ -323,11 +347,13 @@ All notable changes to this mod will be documented in this file.
 - Added modPlugin entry to mod_info.json to ensure MobileRefiningPlugin loads properly
 
 ### Technical
+
 - Proper state management using base class methods ensures deactivate() is called when ability becomes unusable
 
 ## [0.1.1] - 2026-04-21
 
 ### Fixed
+
 - Mobile Refining ability now appears in Codex and UI for selection
   - Migrated abilities.csv to Starsector 0.98a format
   - Moved abilities.csv from data/abilities/ to data/campaign/
@@ -343,6 +369,7 @@ All notable changes to this mod will be documented in this file.
   - Uses CharacterData.addAbility() to grant
 
 ### Technical
+
 - Simplified abilities.csv format (matching ForgeProduction):
   - name,id,type,tags,activationDays,activationCooldown,durationDays,...
   - Empty timing fields for TOGGLE type
@@ -351,6 +378,7 @@ All notable changes to this mod will be documented in this file.
 - Simplified ability logic focusing on usability
 
 ### Removed
+
 - Removed rules.csv based ability granting (no longer needed with CSV approach)
 
 ## [0.1.0] - 2026-04-20
@@ -358,18 +386,21 @@ All notable changes to this mod will be documented in this file.
 Initial version
 
 ### Added
+
 - Mobile Refining hullmod - allows ships to contribute to mobile refining operations
 - Mobile Refining ability - converts ore to metal while in campaign
 - Automatic ability granting to player fleet via ModPlugin
 - Compiled JAR support for modding
 
 ### Technical
+
 - Created VSCode build configuration for compiling and packaging
 - Updated to use compiled Java (JAR) instead of Janino-based scripts
 - Migrated from data/hullmods to src/ for proper modding support
 
 ### Mod Structure
-```
+
+```java
 MobileRefining_mod/
 ├── src/com/mobilerefining/
 │   ├── abilities/MobileRefiningAbility.java
