@@ -9,6 +9,7 @@ All notable changes to this mod will be documented in this file.
   - Reserved commodity mission intel scanning cached per-frame
   - Fleet data cached per-frame
 - Hullmod now properly registering as logistics type with refitting restrictions
+- Hullmod description adjusted with new section
 
 ## [0.1.20] - 2026-05-05
 

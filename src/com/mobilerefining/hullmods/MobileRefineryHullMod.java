@@ -4,6 +4,7 @@ import com.fs.starfarer.api.impl.hullmods.BaseLogisticsHullMod;
 import com.fs.starfarer.api.combat.MutableShipStatsAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
 import com.fs.starfarer.api.combat.ShipAPI.HullSize;
+import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import java.awt.Color;
@@ -65,17 +66,28 @@ public class MobileRefineryHullMod extends BaseLogisticsHullMod {
     @Override
     public void addPostDescriptionSection(TooltipMakerAPI tooltip, HullSize hullSize, ShipAPI ship, float width, boolean isForModSpec) {
         float opad = 10f;
+        Color blue = Misc.getBasePlayerColor();
+        Color darkBlue = Misc.getDarkPlayerColor();
+
         String percent = String.format("%.0f%%", MobileRefiningPlugin.CARGO_SPACE_TAKEN * 100f);
         
         Color yellow = Misc.getHighlightColor();
         tooltip.addPara("Enables the %s processing of certain resources into more compact and useful forms. Unlike that of planetside industries, the machinery is optimized for compactness and power-efficiency and therefore, resources are processed in a way that merely %s their total value.", 
             opad, new Color[] {yellow, yellow}, "onboard", "preserves");
         
-        tooltip.addPara("Turns %s of the ship's cargo capacity into resource processing capacity. %s of cargo is equivalent to %s's worth processed %s. As the equipment is installed into the ship's cargo spaces, it reduces cargo capacity by %s. This reduction does %s apply to processing capacity. Usage of surplus flux grid power does not confer additional effects to installed equipment.", 
-            opad * 0.5f, new Color[] {yellow, yellow, yellow, yellow, yellow, yellow}, 
-            percent, "One unit", "one credit", "per day", percent, "not");
+        tooltip.addPara("Turns %s of the ship's cargo capacity into resource processing capacity. %s of cargo is equivalent to %s's worth processed %s.", 
+            opad, new Color[] {yellow, yellow, yellow, yellow}, 
+            percent, "One unit", "one credit", "per day");
         
-        tooltip.addPara("Capable of processing volatiles into fuel, metal and transplutonics into supplies, raw ores into metal and transplutonics, respectively, and organics into domestic goods only.", opad);
+        tooltip.addPara("As the equipment is installed into the ship's cargo spaces, it reduces cargo capacity by %s. This reduction does %s apply to processing capacity.",
+            opad, new Color[] {yellow, yellow},
+            percent, "not");
+
+        tooltip.addPara("Usage of surplus flux grid power does not confer additional effects to installed equipment.", opad);
+
+        tooltip.addSectionHeading("Commodity restrictions", blue, darkBlue, Alignment.MID, opad);
+
+        tooltip.addPara("Processes volatiles into fuel, metal and transplutonics into supplies, raw ores into metal and transplutonics, respectively, and organics into domestic goods only.", opad);
     }
 
     @Override
@@ -87,7 +99,7 @@ public class MobileRefineryHullMod extends BaseLogisticsHullMod {
         String processPercent = String.format("%.0f%%", SMOD_CARGO_SPACE_TAKEN * 100f);
         String reductionPercent = String.format("%.0f%%", SMOD_CARGO_REDUCTION * 100f);
         tooltip.addPara("Processing capacity increased to %s of ship's cargo capacity. Cargo capacity reduction increased to %s. Base burn level reduced by %s. Supply consumption increased by %s.", 
-            opad * 0.5f, Misc.getHighlightColor(), processPercent, reductionPercent, String.valueOf(SMOD_BURN_PENALTY), String.valueOf((int) SMOD_SUPPLY_PENALTY) + "%");
+            opad, Misc.getHighlightColor(), processPercent, reductionPercent, String.valueOf(SMOD_BURN_PENALTY), String.valueOf((int) SMOD_SUPPLY_PENALTY) + "%");
     }
 
     @Override
