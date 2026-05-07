@@ -1,4 +1,4 @@
-package com.mobilerefining.plugins;
+package com.insituresourceutilization.plugins;
 
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.json.JSONObject;
 
-public class MobileRefiningPlugin extends BaseModPlugin {
+public class InSituResourceUtilizationPlugin extends BaseModPlugin {
 
     public static final String ABILITY_ID = "assembly_line";
 
@@ -60,7 +60,7 @@ public class MobileRefiningPlugin extends BaseModPlugin {
         try {
             loadConfig();
         } catch (Exception ex) {
-            Global.getLogger(MobileRefiningPlugin.class).warn("Failed to load settings.json, using defaults");
+            Global.getLogger(InSituResourceUtilizationPlugin.class).warn("Failed to load settings.json, using defaults");
         }
     }
 
@@ -112,7 +112,7 @@ public class MobileRefiningPlugin extends BaseModPlugin {
     }
 
     private void loadConfig() throws Exception {
-        JSONObject config = Global.getSettings().loadJSON("data/config/settings.json", "mobile_refining");
+        JSONObject config = Global.getSettings().loadJSON("data/config/settings.json", "in_situ_resource_utilization");
 
         if (config != null) {
             BUDGET_PERCENT = (float) config.optDouble("budgetPercent", BUDGET_PERCENT);

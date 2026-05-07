@@ -2,6 +2,15 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.23] - 2026-05-07
+
+- Project rebranded to final In Situ Resource Utilization instead of previous temporary name
+  - Gradle settings updated
+  - Java source files renamed
+  - CSV files updated
+  - GFX icon names adjusted
+- SFX volume adjusted
+
 ## [0.1.22] - 2026-05-07
 
 - Added sound effects to ability switching on and off

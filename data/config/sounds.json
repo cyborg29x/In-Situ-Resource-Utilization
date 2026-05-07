@@ -4,7 +4,7 @@
       {
         "file": "sounds/sfx_abilities/ability_assembly_line_01_enabled.ogg",
         "pitch": 1,
-        "volume": 0.85
+        "volume": 0.75
       }
     ]
   },
@@ -13,7 +13,7 @@
       {
         "file": "sounds/sfx_abilities/ability_assembly_line_02_disabled.ogg",
         "pitch": 1,
-        "volume": 0.85
+        "volume": 0.75
       }
     ]
   }

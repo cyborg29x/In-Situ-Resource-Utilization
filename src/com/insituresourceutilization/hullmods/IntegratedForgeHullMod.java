@@ -1,4 +1,4 @@
-package com.mobilerefining.hullmods;
+package com.insituresourceutilization.hullmods;
 
 import com.fs.starfarer.api.impl.hullmods.BaseLogisticsHullMod;
 import com.fs.starfarer.api.combat.MutableShipStatsAPI;
@@ -8,9 +8,9 @@ import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import java.awt.Color;
-import com.mobilerefining.plugins.MobileRefiningPlugin;
+import com.insituresourceutilization.plugins.InSituResourceUtilizationPlugin;
 
-public class MobileRefineryHullMod extends BaseLogisticsHullMod {
+public class IntegratedForgeHullMod extends BaseLogisticsHullMod {
 
     public static final float SMOD_CARGO_SPACE_TAKEN = 0.15f;
     public static final float SMOD_CARGO_REDUCTION = 0.20f;
@@ -19,19 +19,19 @@ public class MobileRefineryHullMod extends BaseLogisticsHullMod {
 
     public static float getCargoCompensationFactor(ShipAPI ship) {
         boolean sMod = ship != null && ship.getVariant().getSMods().contains("integrated_forge");
-        return 1f / (1f - (sMod ? SMOD_CARGO_REDUCTION : MobileRefiningPlugin.CARGO_SPACE_TAKEN));
+        return 1f / (1f - (sMod ? SMOD_CARGO_REDUCTION : InSituResourceUtilizationPlugin.CARGO_SPACE_TAKEN));
     }
 
     public static float getCargoCompensationFactor(MutableShipStatsAPI stats) {
         boolean sMod = stats != null && stats.getVariant() != null && 
                      stats.getVariant().getSMods().contains("integrated_forge");
-        return 1f / (1f - (sMod ? SMOD_CARGO_REDUCTION : MobileRefiningPlugin.CARGO_SPACE_TAKEN));
+        return 1f / (1f - (sMod ? SMOD_CARGO_REDUCTION : InSituResourceUtilizationPlugin.CARGO_SPACE_TAKEN));
     }
 
     public static float getProcessingPercent(MutableShipStatsAPI stats) {
         boolean sMod = stats != null && stats.getVariant() != null && 
                      stats.getVariant().getSMods().contains("integrated_forge");
-        return sMod ? SMOD_CARGO_SPACE_TAKEN : MobileRefiningPlugin.CARGO_SPACE_TAKEN;
+        return sMod ? SMOD_CARGO_SPACE_TAKEN : InSituResourceUtilizationPlugin.CARGO_SPACE_TAKEN;
     }
 
     @Override
@@ -58,7 +58,7 @@ public class MobileRefineryHullMod extends BaseLogisticsHullMod {
             stats.getMaxBurnLevel().modifyFlat(id, -SMOD_BURN_PENALTY);
             stats.getSuppliesPerMonth().modifyPercent(id, SMOD_SUPPLY_PENALTY);
         } else {
-            cargoReduction = MobileRefiningPlugin.CARGO_SPACE_TAKEN;
+            cargoReduction = InSituResourceUtilizationPlugin.CARGO_SPACE_TAKEN;
         }
         stats.getCargoMod().modifyMult(id, 1f - cargoReduction);
     }
@@ -69,7 +69,7 @@ public class MobileRefineryHullMod extends BaseLogisticsHullMod {
         Color blue = Misc.getBasePlayerColor();
         Color darkBlue = Misc.getDarkPlayerColor();
 
-        String percent = String.format("%.0f%%", MobileRefiningPlugin.CARGO_SPACE_TAKEN * 100f);
+        String percent = String.format("%.0f%%", InSituResourceUtilizationPlugin.CARGO_SPACE_TAKEN * 100f);
         
         Color yellow = Misc.getHighlightColor();
         tooltip.addPara("Enables the %s processing of certain resources into more compact and useful forms. Unlike that of planetside industries, the machinery is optimized for compactness and power-efficiency and therefore, resources are processed in a way that merely %s their total value.", 
@@ -105,7 +105,7 @@ public class MobileRefineryHullMod extends BaseLogisticsHullMod {
     @Override
     public String getDescriptionParam(int index, HullSize hullSize) {
         if (index == 0 || index == 1) {
-            return String.format("%.0f%%", MobileRefiningPlugin.CARGO_SPACE_TAKEN * 100f);
+            return String.format("%.0f%%", InSituResourceUtilizationPlugin.CARGO_SPACE_TAKEN * 100f);
         }
         return null;
     }

@@ -31,7 +31,7 @@ sourceSets {
 }
 
 jar {
-    archiveFileName = 'MobileRefining.jar'
+    archiveFileName = 'InSituResourceUtilization.jar'
     destinationDirectory = file('jars')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
