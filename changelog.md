@@ -8,6 +8,8 @@ All notable changes to this mod will be documented in this file.
   - SFX shortened from testing feedback
   - Sound folder moved to the proper location
 - Hullmod changed to "Integrated Forge" and all references updated
+  - Icon updated to represent more general concept
+- Ability changed to "Assembly Line" and all references updated
 
 ## [0.1.21] - 2026-05-06
 

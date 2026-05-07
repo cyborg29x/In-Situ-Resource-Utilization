@@ -9,7 +9,7 @@ import org.json.JSONObject;
 
 public class MobileRefiningPlugin extends BaseModPlugin {
 
-    public static final String ABILITY_ID = "mobile_refining";
+    public static final String ABILITY_ID = "assembly_line";
 
     private static final Map<String, String> COMMODITY_NAME_CACHE = new HashMap<>();
 
