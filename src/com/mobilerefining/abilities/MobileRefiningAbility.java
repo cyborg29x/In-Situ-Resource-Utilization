@@ -21,7 +21,7 @@ import java.util.Map;
 
 public class MobileRefiningAbility extends BaseToggleAbility {
 
-    public static final String HULLMOD_ID = "mobile_refinery";
+    public static final String HULLMOD_ID = "integrated_forge";
 
     private static FleetDataCache cachedFleetData = null;
 
@@ -535,7 +535,7 @@ public class MobileRefiningAbility extends BaseToggleAbility {
                     tooltip.addPara("*The listed resources are reserved for active missions and will not be processed.", gray, opad);
                 }
             } else {
-                tooltip.addPara("No ships with Mobile Refinery hullmod in fleet.", opad, highlight);
+                tooltip.addPara("Fleet is not capable of processing resources.", opad, highlight);
             }
         }
 }

@@ -18,19 +18,19 @@ public class MobileRefineryHullMod extends BaseLogisticsHullMod {
     public static final float SMOD_SUPPLY_PENALTY = 10f;
 
     public static float getCargoCompensationFactor(ShipAPI ship) {
-        boolean sMod = ship != null && ship.getVariant().getSMods().contains("mobile_refinery");
+        boolean sMod = ship != null && ship.getVariant().getSMods().contains("integrated_forge");
         return 1f / (1f - (sMod ? SMOD_CARGO_REDUCTION : MobileRefiningPlugin.CARGO_SPACE_TAKEN));
     }
 
     public static float getCargoCompensationFactor(MutableShipStatsAPI stats) {
         boolean sMod = stats != null && stats.getVariant() != null && 
-                     stats.getVariant().getSMods().contains("mobile_refinery");
+                     stats.getVariant().getSMods().contains("integrated_forge");
         return 1f / (1f - (sMod ? SMOD_CARGO_REDUCTION : MobileRefiningPlugin.CARGO_SPACE_TAKEN));
     }
 
     public static float getProcessingPercent(MutableShipStatsAPI stats) {
         boolean sMod = stats != null && stats.getVariant() != null && 
-                     stats.getVariant().getSMods().contains("mobile_refinery");
+                     stats.getVariant().getSMods().contains("integrated_forge");
         return sMod ? SMOD_CARGO_SPACE_TAKEN : MobileRefiningPlugin.CARGO_SPACE_TAKEN;
     }
 
