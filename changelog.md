@@ -11,6 +11,7 @@ All notable changes to this mod will be documented in this file.
   - GFX icon names adjusted
   - Hull_mods.csv file name capitalization adjusted to be in line with vanilla
 - SFX volume adjusted
+- GFX file locations adjusted
 
 ## [0.1.22] - 2026-05-07
 

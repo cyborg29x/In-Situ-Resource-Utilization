@@ -1,2 +1,2 @@
 name,id,type,tags,activationDays,activationCooldown,durationDays,deactivationDays,deactivationCooldown,unlockedAtStart,defaultForAIFleet,musicSuppression,uiOn,uiOff,uiLoop,worldOn,worldOff,worldLoop,icon,plugin,ai,desc,sortOrder
-Assembly Line,assembly_line,TOGGLE,,,,,,,TRUE,,,ui_assembly_line_on,ui_assembly_line_off,,,,,graphics/abilities/assembly_line.png,com.insituresourceutilization.abilities.AssemblyLineAbility,,Enables onboard resource processing using fleet's integrated ships.,869
+Assembly Line,assembly_line,TOGGLE,,,,,,,TRUE,,,ui_assembly_line_on,ui_assembly_line_off,,,,,graphics/icons/abilities/assembly_line.png,com.insituresourceutilization.abilities.AssemblyLineAbility,,Enables onboard resource processing using fleet's integrated ships.,869

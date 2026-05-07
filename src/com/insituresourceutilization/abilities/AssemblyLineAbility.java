@@ -535,7 +535,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                     tooltip.addPara("*The listed resources are reserved for active missions and will not be processed.", gray, opad);
                 }
             } else {
-                tooltip.addPara("Fleet is not capable of processing resources.", opad, highlight);
+                tooltip.addPara("Your fleet is not currently capable of processing resources.", Misc.getNegativeHighlightColor(), opad);
             }
         }
     }
