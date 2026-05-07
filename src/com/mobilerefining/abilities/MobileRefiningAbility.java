@@ -292,13 +292,10 @@ public class MobileRefiningAbility extends BaseToggleAbility {
 
     @Override
     public void pressButton() {
-        if (isActive()) {
-            deactivate();
-        } else {
-            if (canActivate()) {
-                activate();
-            }
+        if (!isActive() && !canActivate()) {
+            return;
         }
+        super.pressButton();
     }
 
     private boolean canActivate() {

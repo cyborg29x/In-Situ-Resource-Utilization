@@ -1,0 +1,20 @@
+{
+  "ui_assembly_line_on": {
+    "sounds": [
+      {
+        "file": "sounds/sfx_abilities/ability_assembly_line_01_enabled.ogg",
+        "pitch": 1,
+        "volume": 0.85
+      }
+    ]
+  },
+  "ui_assembly_line_off": {
+    "sounds": [
+      {
+        "file": "sounds/sfx_abilities/ability_assembly_line_02_disabled.ogg",
+        "pitch": 1,
+        "volume": 0.85
+      }
+    ]
+  }
+}

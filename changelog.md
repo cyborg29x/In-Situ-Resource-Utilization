@@ -2,6 +2,10 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.22] - 2026-05-07
+
+- Added sound effects to ability switching on and off
+
 ## [0.1.21] - 2026-05-06
 
 - Optimization pass
