@@ -538,5 +538,6 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                 tooltip.addPara("Your fleet is not currently capable of processing resources.", Misc.getNegativeHighlightColor(), opad);
             }
         }
+        addIncompatibleToTooltip(tooltip, expanded);
     }
 }

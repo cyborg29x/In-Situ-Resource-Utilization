@@ -2,6 +2,11 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.24] - 2026-05-08
+
+- Assembly Line made incompatible with Go Dark like most other vanilla abilities
+- Added expanded form tooltip to Assembly Line
+
 ## [0.1.23] - 2026-05-07
 
 - Project rebranded to final In Situ Resource Utilization instead of previous temporary name
