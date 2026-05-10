@@ -3,6 +3,8 @@ package com.insituresourceutilization.utils;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
+import com.fs.starfarer.api.campaign.rules.MemoryAPI;
+import com.fs.starfarer.api.characters.PersonAPI;
 import com.fs.starfarer.api.impl.campaign.intel.BaseMissionIntel;
 import com.fs.starfarer.api.impl.campaign.intel.ProcurementMissionIntel;
 import com.fs.starfarer.api.impl.campaign.intel.bar.events.DeliveryMissionIntel;
@@ -31,12 +33,9 @@ public class MissionCargoTracker {
     static {
         DISPLAY_NAME_TO_ID.put("Transplutonics", "rare_metals");
         DISPLAY_NAME_TO_ID.put("Metals", "metals");
-        DISPLAY_NAME_TO_ID.put("Supplies", "supplies");
         DISPLAY_NAME_TO_ID.put("Ore", "ore");
         DISPLAY_NAME_TO_ID.put("Volatiles", "volatiles");
-        DISPLAY_NAME_TO_ID.put("Fuel", "fuel");
         DISPLAY_NAME_TO_ID.put("Organics", "organics");
-        DISPLAY_NAME_TO_ID.put("Domestic Goods", "domestic_goods");
         DISPLAY_NAME_TO_ID.put("Transplutonic Ore", "rare_ore");
     }
 
@@ -115,37 +114,27 @@ public class MissionCargoTracker {
 
     private static void addProcurementReservation(Map<String, Float> result, ProcurementMissionIntel intel) {
         try {
-            Field quantityField = ProcurementMissionIntel.class.getDeclaredField("quantity");
-            quantityField.setAccessible(true);
-            float quantity = ((Number) quantityField.get(intel)).floatValue();
-
-            String commodityId = null;
-            try {
-                Field commodityField = ProcurementMissionIntel.class.getDeclaredField("commodity");
-                commodityField.setAccessible(true);
-                Object commodityObj = commodityField.get(intel);
-                if (commodityObj != null) {
-                    java.lang.reflect.Method getIdMethod = commodityObj.getClass().getMethod("getId");
-                    commodityId = (String) getIdMethod.invoke(commodityObj);
-                }
-            } catch (Exception e) {
-                // commodity field not accessible, try pickCommodity() as fallback
+            Field contactField = ProcurementMissionIntel.class.getDeclaredField("contact");
+            contactField.setAccessible(true);
+            PersonAPI contact = (PersonAPI) contactField.get(intel);
+            if (contact == null) {
+                return;
             }
 
-            if (commodityId == null) {
-                try {
-                    java.lang.reflect.Method pickMethod = ProcurementMissionIntel.class.getDeclaredMethod("pickCommodity");
-                    commodityId = (String) pickMethod.invoke(intel);
-                } catch (Exception e) {
-                    Global.getLogger(MissionCargoTracker.class).warn("Failed to get commodity ID from ProcurementMissionIntel", e);
-                }
+            MemoryAPI memory = contact.getMemoryWithoutUpdate();
+            String commodityName = memory.getString("$mpm_commodityName");
+            if (commodityName == null) {
+                return;
             }
 
+            float quantity = memory.getFloat("$mpm_quantity");
+
+            String commodityId = DISPLAY_NAME_TO_ID.get(commodityName);
             if (commodityId != null) {
                 result.merge(commodityId, quantity, Float::sum);
             }
         } catch (Exception e) {
-            Global.getLogger(MissionCargoTracker.class).warn("Failed to read ProcurementMissionIntel data", e);
+            Global.getLogger(MissionCargoTracker.class).warn("Failed to read ProcurementMissionIntel data via MemoryAPI", e);
         }
     }
 

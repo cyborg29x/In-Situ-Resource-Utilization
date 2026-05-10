@@ -31,6 +31,7 @@ public class InSituResourceUtilizationPlugin extends BaseModPlugin {
     public static float BUDGET_PERCENT = 0.10f;
     public static float CARGO_SPACE_TAKEN = 0.10f;
     public static final float CARGO_COMPENSATION_FACTOR = 1f / (1f - CARGO_SPACE_TAKEN);
+    public static final float VOLATILE_RESERVE_AMOUNT = 30f;
 
     @Override
     public void onGameLoad(boolean newGame) {

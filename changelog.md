@@ -2,6 +2,12 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.25] - 2026-05-10
+
+- Changed intel mission tracker to use MemoryAPI for ProcurementMission instead of reflection
+- Volatiles to fuel line in ability tooltip now appears in real space too
+- Volatiles reserve amount moved to one constant declaration and code reworked to reference that value
+
 ## [0.1.24] - 2026-05-08
 
 - Assembly Line made incompatible with Go Dark like most other vanilla abilities

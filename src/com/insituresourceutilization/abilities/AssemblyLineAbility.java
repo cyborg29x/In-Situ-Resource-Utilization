@@ -85,7 +85,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
             if (fuelToProduce > 0) {
                 float volatilesRequired = fuelToProduce / InSituResourceUtilizationPlugin.VOLATILES_TO_FUEL_RATIO;
                 float availableVolatiles = MissionCargoTracker.getAvailableQuantity("volatiles", cargo, reservedCommodities);
-                float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
+                float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT);
                 float budgetByFuelSpace = volatilesRequired * InSituResourceUtilizationPlugin.VOLATILES_PRICE;
                 float budgetByVolatiles = volatilesAvailableForProcessing * InSituResourceUtilizationPlugin.VOLATILES_PRICE;
                 float effectiveBudget = Math.min(processingCapacity, Math.min(budgetByFuelSpace, budgetByVolatiles));
@@ -122,7 +122,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
         if (fuelSpace > 0) {
             float volatilesRequired = fuelSpace / InSituResourceUtilizationPlugin.VOLATILES_TO_FUEL_RATIO;
             float availableVolatiles = MissionCargoTracker.getAvailableQuantity("volatiles", cargo, reservedCommodities);
-            float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
+            float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT);
             float budgetByFuelSpace = volatilesRequired * InSituResourceUtilizationPlugin.VOLATILES_PRICE;
             float budgetByVolatiles = volatilesAvailableForProcessing * InSituResourceUtilizationPlugin.VOLATILES_PRICE;
             float effectiveBudget = Math.min(processingCapacity, Math.min(budgetByFuelSpace, budgetByVolatiles));
@@ -396,8 +396,10 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                 float remainingCapacity = budget;
                 List<ResourceEntry> entries = new ArrayList<>();
 
-                float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - 30f);
-                if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f && volatilesAvailableForProcessing > 0 && remainingCapacity > 0) {
+                float fuelSpace = calculateFuelSpace(cargo);
+                float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT);
+
+                if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f && fuelSpace > 0 && volatilesAvailableForProcessing > 0 && remainingCapacity > 0) {
                     float volatilesBudget = Math.min(remainingCapacity, volatilesAvailableForProcessing * InSituResourceUtilizationPlugin.VOLATILES_PRICE);
                     float dailyRate = remainingCapacity / InSituResourceUtilizationPlugin.VOLATILES_PRICE;
                     float timeDays = dailyRate > 0 ? volatilesAvailableForProcessing / dailyRate : 0f;
@@ -410,6 +412,8 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                     entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
                     remainingCapacity -= volatilesBudget;
                 }
+
+                float volatilesAfterHyperspace = Math.max(0, availableVolatiles - InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT);
 
                 float remainingCapacityBeforeMetals = remainingCapacity;
                 float metalBudget = Math.min(remainingCapacity, availableMetals * InSituResourceUtilizationPlugin.METAL_PRICE);
@@ -450,6 +454,24 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                     String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * InSituResourceUtilizationPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO : 0f);
                     entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
                     remainingCapacity -= transBudget;
+                }
+
+                float fuelSpaceUncapped = calculateFuelSpace(cargo);
+                float inputToProcess = remainingCapacity > 0 ? remainingCapacity / InSituResourceUtilizationPlugin.VOLATILES_PRICE : 0f;
+                float volatilesForUncapped = Math.min(inputToProcess, volatilesAfterHyperspace);
+                if (fuelSpaceUncapped > 0 && volatilesForUncapped > 0) {
+                    float effectiveBudget = volatilesForUncapped * InSituResourceUtilizationPlugin.VOLATILES_PRICE;
+                    float outputProduced = volatilesAfterHyperspace * InSituResourceUtilizationPlugin.VOLATILES_TO_FUEL_RATIO;
+                    float dailyRate = remainingCapacity > 0 ? remainingCapacity / InSituResourceUtilizationPlugin.VOLATILES_PRICE : 0f;
+                    float timeDays = dailyRate > 0 ? volatilesAfterHyperspace / dailyRate : 0f;
+                    String timeEstimate = formatTimeEstimate(timeDays);
+                    String inputAmount = String.valueOf((int)(float)Math.floor(volatilesAfterHyperspace));
+                    String outputAmount = String.valueOf((int)(float)Math.floor(outputProduced));
+                    String inputCommodity = getCommodityName("volatiles");
+                    String outputCommodity = getCommodityName("fuel");
+                    String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * InSituResourceUtilizationPlugin.VOLATILES_TO_FUEL_RATIO : 0f);
+                    entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
+                    remainingCapacity -= effectiveBudget;
                 }
 
                 if (availableOre > 0 && remainingCapacity > 0) {
@@ -511,7 +533,8 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                 float reservedTransplutonics = cargo.getCommodityQuantity("rare_metals") - availableTransplutonics;
                 float reservedOre = cargo.getCommodityQuantity("ore") - availableOre;
                 float reservedOrganics = cargo.getCommodityQuantity("organics") - availableOrganics;
-                float reservedVolatiles = cargo.getCommodityQuantity("volatiles") - availableVolatiles;
+                float reservedVolatiles = cargo.getCommodityQuantity("volatiles") - availableVolatiles
+                    + Math.min(InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT, availableVolatiles);
 
                 if (reservedMetals > 0 || reservedTransplutonics > 0 || reservedOre > 0 || reservedOrganics > 0 || reservedVolatiles > 0) {
                     tooltip.addSectionHeading("Reserved commodities", blue, darkBlue, Alignment.MID, opad);
@@ -532,7 +555,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                         tooltip.addPara(name + ": %s.", opad, highlight, String.valueOf((int)(float)Math.floor(amount)));
                     }
 
-                    tooltip.addPara("*The listed resources are reserved for active missions and will not be processed.", gray, opad);
+                    tooltip.addPara("*The listed resources are reserved for active missions or non-processing use and will not be consumed.", gray, opad);
                 }
             } else {
                 tooltip.addPara("Your fleet is not currently capable of processing resources.", Misc.getNegativeHighlightColor(), opad);
