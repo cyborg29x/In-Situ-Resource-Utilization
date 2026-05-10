@@ -7,6 +7,7 @@ All notable changes to this mod will be documented in this file.
 - Changed intel mission tracker to use MemoryAPI for ProcurementMission instead of reflection
 - Volatiles to fuel line in ability tooltip now appears in real space too
 - Volatiles reserve amount moved to one constant declaration and code reworked to reference that value
+- Metal and Transplutonics to Supplies now taking per-frame game increment into account for anti-flickering
 
 ## [0.1.24] - 2026-05-08
 

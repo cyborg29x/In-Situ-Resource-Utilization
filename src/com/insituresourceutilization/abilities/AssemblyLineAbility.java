@@ -393,6 +393,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                 float availableOrganics = MissionCargoTracker.getAvailableQuantity("organics", cargo, reservedCommodities);
                 float transOreAvailable = MissionCargoTracker.getAvailableQuantity("rare_ore", cargo, reservedCommodities);
 
+                float timeIncrement = Global.getSector().getClock().convertToDays(1f);
                 float remainingCapacity = budget;
                 List<ResourceEntry> entries = new ArrayList<>();
 
@@ -416,7 +417,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                 float volatilesAfterHyperspace = Math.max(0, availableVolatiles - InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT);
 
                 float remainingCapacityBeforeMetals = remainingCapacity;
-                float metalBudget = Math.min(remainingCapacity, availableMetals * InSituResourceUtilizationPlugin.METAL_PRICE);
+                float metalBudget = Math.min(remainingCapacity, availableMetals * InSituResourceUtilizationPlugin.METAL_PRICE * timeIncrement);
                 if (availableMetals > 0 && remainingCapacity > 0 && metalBudget < availableMetals * InSituResourceUtilizationPlugin.METAL_PRICE) {
                     float dailyRate = remainingCapacity / InSituResourceUtilizationPlugin.METAL_PRICE;
                     float timeDays = dailyRate > 0 ? availableMetals / dailyRate : 0f;
@@ -443,7 +444,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                 float maxTransBudget = remainingNeed / InSituResourceUtilizationPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO * InSituResourceUtilizationPlugin.TRANSPLUTONICS_PRICE;
                 float transBudget = Math.min(capacityAfterMetals, Math.min(availableTransplutonics * InSituResourceUtilizationPlugin.TRANSPLUTONICS_PRICE, maxTransBudget));
 
-                if (availableTransplutonics > 0 && capacityAfterMetals > 0 && transBudget < availableTransplutonics * InSituResourceUtilizationPlugin.TRANSPLUTONICS_PRICE) {
+                if (availableTransplutonics > 0 && capacityAfterMetals > 0 && transBudget < availableTransplutonics * InSituResourceUtilizationPlugin.TRANSPLUTONICS_PRICE * timeIncrement) {
                     float dailyRate = transBudget / InSituResourceUtilizationPlugin.TRANSPLUTONICS_PRICE;
                     float timeDays = dailyRate > 0 ? availableTransplutonics / dailyRate : 0f;
                     String timeEstimate = formatTimeEstimate(timeDays);
