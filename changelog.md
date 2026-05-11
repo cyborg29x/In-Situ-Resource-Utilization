@@ -2,6 +2,12 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.26] - 2026-05-11
+
+- Fixed delivery mission not reserving transplutonic ore
+- Work in progress on fixing procurement mission tracking
+- Adjusted threshold at which the final tier of time unit appears in the ability tooltip
+
 ## [0.1.25] - 2026-05-10
 
 - Changed intel mission tracker to use MemoryAPI for ProcurementMission instead of reflection

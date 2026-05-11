@@ -6,7 +6,7 @@ import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.characters.PersonAPI;
 import com.fs.starfarer.api.impl.campaign.intel.BaseMissionIntel;
-import com.fs.starfarer.api.impl.campaign.intel.ProcurementMissionIntel;
+import com.fs.starfarer.api.impl.campaign.missions.ProcurementMission;
 import com.fs.starfarer.api.impl.campaign.intel.bar.events.DeliveryMissionIntel;
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -25,7 +25,7 @@ public class MissionCargoTracker {
     private static final Set<String> MISSION_CLASS_PREFIXES = new HashSet<>();
     static {
         MISSION_CLASS_PREFIXES.add("DeliveryMissionIntel");
-        MISSION_CLASS_PREFIXES.add("ProcurementMissionIntel");
+        MISSION_CLASS_PREFIXES.add("ProcurementMission");
         MISSION_CLASS_PREFIXES.add("CheapCommodityMission");
     }
 
@@ -76,8 +76,8 @@ public class MissionCargoTracker {
                     continue;
                 }
 
-                if (intel instanceof ProcurementMissionIntel) {
-                    addProcurementReservation(result, (ProcurementMissionIntel) intel);
+                if (intel instanceof ProcurementMission) {
+                    addProcurementReservation(result, (ProcurementMission) intel);
                 } else if (isCheapCommodityMission(intel)) {
                     addCheapCommodityReservation(result, intel);
                 } else if (intel instanceof DeliveryMissionIntel) {
@@ -112,9 +112,9 @@ public class MissionCargoTracker {
         return mission.isAccepted() && !mission.isCompleted() && !mission.isFailed() && !mission.isAbandoned() && !mission.isCancelled();
     }
 
-    private static void addProcurementReservation(Map<String, Float> result, ProcurementMissionIntel intel) {
+    private static void addProcurementReservation(Map<String, Float> result, ProcurementMission intel) {
         try {
-            Field contactField = ProcurementMissionIntel.class.getDeclaredField("contact");
+            Field contactField = ProcurementMission.class.getDeclaredField("contact");
             contactField.setAccessible(true);
             PersonAPI contact = (PersonAPI) contactField.get(intel);
             if (contact == null) {
@@ -134,7 +134,7 @@ public class MissionCargoTracker {
                 result.merge(commodityId, quantity, Float::sum);
             }
         } catch (Exception e) {
-            Global.getLogger(MissionCargoTracker.class).warn("Failed to read ProcurementMissionIntel data via MemoryAPI", e);
+            Global.getLogger(MissionCargoTracker.class).warn("Failed to read ProcurementMission data via MemoryAPI", e);
         }
     }
 

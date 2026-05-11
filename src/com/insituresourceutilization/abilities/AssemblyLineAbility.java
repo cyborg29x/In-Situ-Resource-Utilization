@@ -254,7 +254,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
             return "one week";
         } else if (timeDays < 30f) {
             return (int)Math.ceil(timeDays / 7f) + " weeks";
-        } else if (timeDays < 365f) {
+        } else if (timeDays < 360f) {
             return timeDays < 30f ? "a month" : (int)Math.ceil(timeDays / 30f) + " months";
         } else {
             return "more than a year";
@@ -536,8 +536,9 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                 float reservedOrganics = cargo.getCommodityQuantity("organics") - availableOrganics;
                 float reservedVolatiles = cargo.getCommodityQuantity("volatiles") - availableVolatiles
                     + Math.min(InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT, availableVolatiles);
+                float reservedTransplutonicOre = cargo.getCommodityQuantity("rare_ore") - transOreAvailable;
 
-                if (reservedMetals > 0 || reservedTransplutonics > 0 || reservedOre > 0 || reservedOrganics > 0 || reservedVolatiles > 0) {
+                if (reservedMetals > 0 || reservedTransplutonics > 0 || reservedOre > 0 || reservedOrganics > 0 || reservedVolatiles > 0 || reservedTransplutonicOre > 0) {
                     tooltip.addSectionHeading("Reserved commodities", blue, darkBlue, Alignment.MID, opad);
 
                     List<Object[]> reservedList = new ArrayList<>();
@@ -546,6 +547,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                     if (reservedOre > 0) reservedList.add(new Object[]{"Ore", reservedOre, (float)reservedOre * InSituResourceUtilizationPlugin.ORE_PRICE});
                     if (reservedOrganics > 0) reservedList.add(new Object[]{"Organics", reservedOrganics, (float)reservedOrganics * InSituResourceUtilizationPlugin.ORGANICS_PRICE});
                     if (reservedVolatiles > 0) reservedList.add(new Object[]{"Volatiles", reservedVolatiles, (float)reservedVolatiles * InSituResourceUtilizationPlugin.VOLATILES_PRICE});
+                    if (reservedTransplutonicOre > 0) reservedList.add(new Object[]{"Transplutonic Ore", reservedTransplutonicOre, (float)reservedTransplutonicOre * InSituResourceUtilizationPlugin.TRANSPLUTONIC_ORE_PRICE});
 
                     Collections.sort(reservedList, (a, b) -> Float.compare((Float)b[2], (Float)a[2]));
 
