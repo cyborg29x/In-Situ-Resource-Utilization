@@ -2,6 +2,11 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.27] - 2026-05-12
+
+- Mission tracking reworked to reserve entire commodity type due to game API limitations
+  - Ability tooltip reworked to take new mission reservation methods into account
+
 ## [0.1.26] - 2026-05-11
 
 - Fixed delivery mission not reserving transplutonic ore

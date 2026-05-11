@@ -19,7 +19,7 @@ public class MissionCargoTracker {
 
     private static final String CHEAP_COMMODITY_CLASS = "com.fs.starfarer.api.impl.campaign.missions.CheapCommodityMission";
 
-    private static Map<String, Float> cachedResult = null;
+    private static Set<String> cachedResult = null;
     private static long cachedTimestamp = -1;
 
     private static final Set<String> MISSION_CLASS_PREFIXES = new HashSet<>();
@@ -41,28 +41,27 @@ public class MissionCargoTracker {
 
     public static float getAvailableQuantity(String commodityId, CargoAPI cargo) {
         float total = cargo.getCommodityQuantity(commodityId);
-        float reserved = getReservedQuantity(commodityId);
-        return Math.max(0, total - reserved);
+        boolean reserved = isCommodityReserved(commodityId);
+        return reserved ? 0f : total;
     }
 
-    public static float getAvailableQuantity(String commodityId, CargoAPI cargo, Map<String, Float> reservedMap) {
+    public static float getAvailableQuantity(String commodityId, CargoAPI cargo, Set<String> reservedSet) {
         float total = cargo.getCommodityQuantity(commodityId);
-        float reserved = reservedMap.getOrDefault(commodityId, 0f);
-        return Math.max(0, total - reserved);
+        return reservedSet.contains(commodityId) ? 0f : total;
     }
 
-    public static float getReservedQuantity(String commodityId) {
-        Map<String, Float> reserved = getAllReservedCommodities();
-        return reserved.getOrDefault(commodityId, 0f);
+    public static boolean isCommodityReserved(String commodityId) {
+        Set<String> reserved = getAllReservedCommodities();
+        return reserved.contains(commodityId);
     }
 
-    public static Map<String, Float> getAllReservedCommodities() {
+    public static Set<String> getAllReservedCommodities() {
         long currentTimestamp = Global.getSector().getClock().getTimestamp();
         if (cachedResult != null && cachedTimestamp == currentTimestamp) {
             return cachedResult;
         }
 
-        Map<String, Float> result = new HashMap<>();
+        Set<String> result = new HashSet<>();
 
         try {
             List<IntelInfoPlugin> intelList = Global.getSector().getIntelManager().getIntel();
@@ -112,26 +111,27 @@ public class MissionCargoTracker {
         return mission.isAccepted() && !mission.isCompleted() && !mission.isFailed() && !mission.isAbandoned() && !mission.isCancelled();
     }
 
-    private static void addProcurementReservation(Map<String, Float> result, ProcurementMission intel) {
+    private static void addProcurementReservation(Set<String> result, ProcurementMission intel) {
         try {
             Field contactField = ProcurementMission.class.getDeclaredField("contact");
             contactField.setAccessible(true);
             PersonAPI contact = (PersonAPI) contactField.get(intel);
+
             if (contact == null) {
                 return;
             }
 
             MemoryAPI memory = contact.getMemoryWithoutUpdate();
             String commodityName = memory.getString("$mpm_commodityName");
+
             if (commodityName == null) {
                 return;
             }
 
-            float quantity = memory.getFloat("$mpm_quantity");
-
             String commodityId = DISPLAY_NAME_TO_ID.get(commodityName);
+
             if (commodityId != null) {
-                result.merge(commodityId, quantity, Float::sum);
+                result.add(commodityId);
             }
         } catch (Exception e) {
             Global.getLogger(MissionCargoTracker.class).warn("Failed to read ProcurementMission data via MemoryAPI", e);
@@ -142,7 +142,7 @@ public class MissionCargoTracker {
         return CHEAP_COMMODITY_CLASS.equals(intel.getClass().getName());
     }
 
-    private static void addCheapCommodityReservation(Map<String, Float> result, IntelInfoPlugin intel) {
+    private static void addCheapCommodityReservation(Set<String> result, IntelInfoPlugin intel) {
         try {
             Class<?> clazz = intel.getClass();
 
@@ -150,17 +150,15 @@ public class MissionCargoTracker {
             commodityIdField.setAccessible(true);
             String commodityId = (String) commodityIdField.get(intel);
 
-            Field quantityField = clazz.getDeclaredField("quantity");
-            quantityField.setAccessible(true);
-            float quantity = ((Number) quantityField.get(intel)).floatValue();
-
-            result.merge(commodityId, quantity, Float::sum);
+            if (commodityId != null) {
+                result.add(commodityId);
+            }
         } catch (Exception e) {
             Global.getLogger(MissionCargoTracker.class).warn("Failed to read CheapCommodityMission data", e);
         }
     }
 
-    private static void addDeliveryReservation(Map<String, Float> result, IntelInfoPlugin intel) {
+    private static void addDeliveryReservation(Set<String> result, IntelInfoPlugin intel) {
         try {
             if (!(intel instanceof DeliveryMissionIntel)) {
                 return;
@@ -178,8 +176,7 @@ public class MissionCargoTracker {
                     return;
                 }
 
-                int quantity = deliveryIntel.getEvent().getQuantity();
-                result.merge(commodityId, (float) quantity, Float::sum);
+                result.add(commodityId);
             }
         } catch (Exception e) {
             Global.getLogger(MissionCargoTracker.class).warn("Failed to read Delivery mission data", e);

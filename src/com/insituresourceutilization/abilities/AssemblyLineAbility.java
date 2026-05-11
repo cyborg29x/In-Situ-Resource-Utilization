@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 public class AssemblyLineAbility extends BaseToggleAbility {
 
@@ -70,7 +70,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
         }
 
         CargoAPI cargo = fleet.getCargo();
-        Map<String, Float> reservedCommodities = MissionCargoTracker.getAllReservedCommodities();
+        Set<String> reservedCommodities = MissionCargoTracker.getAllReservedCommodities();
 
         float processingCapacity = totalBudget * days;
 
@@ -174,7 +174,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
         return totalDeploymentCost;
     }
 
-    private float processResource(CargoAPI cargo, float budget, Map<String, Float> reservedCommodities,
+    private float processResource(CargoAPI cargo, float budget, Set<String> reservedCommodities,
             String inputCommodity, float inputPrice,
             String outputCommodity, float outputRatio) {
 
@@ -385,7 +385,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
 
                 tooltip.addSectionHeading("Resource processing", blue, darkBlue, Alignment.MID, opad);
 
-                Map<String, Float> reservedCommodities = MissionCargoTracker.getAllReservedCommodities();
+                Set<String> reservedCommodities = MissionCargoTracker.getAllReservedCommodities();
                 float availableVolatiles = MissionCargoTracker.getAvailableQuantity("volatiles", cargo, reservedCommodities);
                 float availableMetals = MissionCargoTracker.getAvailableQuantity("metals", cargo, reservedCommodities);
                 float availableTransplutonics = MissionCargoTracker.getAvailableQuantity("rare_metals", cargo, reservedCommodities);
@@ -530,33 +530,72 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                     }
                 }
 
-                float reservedMetals = cargo.getCommodityQuantity("metals") - availableMetals;
-                float reservedTransplutonics = cargo.getCommodityQuantity("rare_metals") - availableTransplutonics;
-                float reservedOre = cargo.getCommodityQuantity("ore") - availableOre;
-                float reservedOrganics = cargo.getCommodityQuantity("organics") - availableOrganics;
-                float reservedVolatiles = cargo.getCommodityQuantity("volatiles") - availableVolatiles
-                    + Math.min(InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT, availableVolatiles);
-                float reservedTransplutonicOre = cargo.getCommodityQuantity("rare_ore") - transOreAvailable;
-
-                if (reservedMetals > 0 || reservedTransplutonics > 0 || reservedOre > 0 || reservedOrganics > 0 || reservedVolatiles > 0 || reservedTransplutonicOre > 0) {
+                if (!reservedCommodities.isEmpty()) {
                     tooltip.addSectionHeading("Reserved commodities", blue, darkBlue, Alignment.MID, opad);
 
-                    List<Object[]> reservedList = new ArrayList<>();
-                    if (reservedMetals > 0) reservedList.add(new Object[]{"Metals", reservedMetals, (float)reservedMetals * InSituResourceUtilizationPlugin.METAL_PRICE});
-                    if (reservedTransplutonics > 0) reservedList.add(new Object[]{"Transplutonics", reservedTransplutonics, (float)reservedTransplutonics * InSituResourceUtilizationPlugin.TRANSPLUTONICS_PRICE});
-                    if (reservedOre > 0) reservedList.add(new Object[]{"Ore", reservedOre, (float)reservedOre * InSituResourceUtilizationPlugin.ORE_PRICE});
-                    if (reservedOrganics > 0) reservedList.add(new Object[]{"Organics", reservedOrganics, (float)reservedOrganics * InSituResourceUtilizationPlugin.ORGANICS_PRICE});
-                    if (reservedVolatiles > 0) reservedList.add(new Object[]{"Volatiles", reservedVolatiles, (float)reservedVolatiles * InSituResourceUtilizationPlugin.VOLATILES_PRICE});
-                    if (reservedTransplutonicOre > 0) reservedList.add(new Object[]{"Transplutonic Ore", reservedTransplutonicOre, (float)reservedTransplutonicOre * InSituResourceUtilizationPlugin.TRANSPLUTONIC_ORE_PRICE});
-
-                    Collections.sort(reservedList, (a, b) -> Float.compare((Float)b[2], (Float)a[2]));
-
-                    for (Object[] entry : reservedList) {
-                        String name = (String)entry[0];
+                    List<String> reservedNames = new ArrayList<>();
+                    boolean hasSmallAmountVolatiles = false;
+                    for (String commodityId : reservedCommodities) {
+                        String name = getCommodityName(commodityId);
                         name = name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
-                        float amount = (Float)entry[1];
-                        tooltip.addPara(name + ": %s.", opad, highlight, String.valueOf((int)(float)Math.floor(amount)));
+                        reservedNames.add(name);
                     }
+
+                    if (cargo.getCommodityQuantity("volatiles") > 0 && !reservedCommodities.contains("volatiles")) {
+                        reservedNames.add("volatiles");
+                        hasSmallAmountVolatiles = true;
+                    }
+
+                    String format;
+                    List<String> highlightArgs = new ArrayList<>();
+
+                    if (reservedNames.size() == 1) {
+                        String name = reservedNames.get(0);
+                        if (hasSmallAmountVolatiles) {
+                            format = "A small amount of %s.";
+                            highlightArgs.add(name);
+                        } else {
+                            format = "%s.";
+                            highlightArgs.add(name);
+                        }
+                    } else if (reservedNames.size() == 2) {
+                        if (hasSmallAmountVolatiles) {
+                            String other = reservedNames.get(0).equals("volatiles") ? reservedNames.get(1) : reservedNames.get(0);
+                            format = "%s and a small amount of %s.";
+                            highlightArgs.add(other);
+                            highlightArgs.add("volatiles");
+                        } else {
+                            format = "%s and %s.";
+                            highlightArgs.add(reservedNames.get(0));
+                            highlightArgs.add(reservedNames.get(1));
+                        }
+                    } else {
+                        StringBuilder sb = new StringBuilder();
+                        List<String> sortedNames = new ArrayList<>(reservedNames);
+                        if (hasSmallAmountVolatiles) {
+                            sortedNames.remove("volatiles");
+                            sortedNames.add("volatiles");
+                        }
+                        for (int i = 0; i < sortedNames.size(); i++) {
+                            if (i > 0) {
+                                if (i == sortedNames.size() - 1) {
+                                    if (sortedNames.get(i).equals("volatiles") && hasSmallAmountVolatiles) {
+                                        sb.append(" and a small amount of ");
+                                    } else {
+                                        sb.append(" and ");
+                                    }
+                                } else {
+                                    sb.append(", ");
+                                }
+                            }
+                            sb.append("%s");
+                        }
+                        sb.append(".");
+                        format = sb.toString();
+                        highlightArgs.addAll(sortedNames);
+                    }
+
+                    tooltip.addPara(format, opad, highlight, highlightArgs.toArray(new String[0]));
 
                     tooltip.addPara("*The listed resources are reserved for active missions or non-processing use and will not be consumed.", gray, opad);
                 }
