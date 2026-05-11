@@ -19,84 +19,193 @@ com.fs.starfarer.api.impl.campaign.missions.ProcurementMission
 
 **Not** `ProcurementMissionIntel` - the original prefix was incorrect.
 
-### 2. Reflection Blocked
+### 2. Two Mission Types Exist
 
-Reflection is blocked when running from Janino scripts:
+There are TWO different procurement mission types:
+
+1. **`ProcurementMission`** (bar mission variant) - obtained from bar NPCs
+2. **`ProcurementMissionIntel`** (Intel variant) - obtained from Intel panel
+
+The Intel variant (`ProcurementMissionIntel`) works correctly because it stores data on the contact's memory using `$mpm_commodityName` and `$mpm_quantity` keys, which are accessible via public API.
+
+### 3. Reflection Blocked Even in Compiled Plugin
+
+Despite being a compiled Java plugin (not Janino), reflection is blocked:
 ```
 java.lang.SecurityException: File access and reflection are not allowed to scripts.
 ```
 
-This means direct field access like `intel.getClass().getDeclaredField("commodityId")` fails.
+This occurs when trying to access fields on:
+- The ProcurementMission object from `$proCom_ref`
+- The `deliveryContact` field from the intel object itself
+- Any field on the ProcurementMission class
 
-### 3. Memory Key Locations Investigated
+The SecurityException suggests the ProcurementMission object itself is treated as a "script" context by the game's security system.
 
-The `ProcurementMission` class stores data via `set()` which writes to memory. Investigation showed:
+### 4. Memory Key Analysis
 
 #### Person Memory Keys Found:
 ```
 [$voice, $requiredForMissions, $requiredForMissions_proCom, $proCom_ref, $missionId]
 ```
 
-**Missing keys:** `$proCom_commodityId` and `$proCom_quantity` were NOT found on the person's memory.
+**Missing keys:** `$proCom_commodityId` and `$proCom_quantity` were NOT found.
 
-#### Intel Memory
-`BaseIntelPlugin` does NOT have a `getMemory()` method. The memory system is only on people/entities.
+#### $proCom_ref Contains:
+- The actual ProcurementMission object (same as the intel object)
+- Reflection on this object is blocked by SecurityException
 
-### 4. Why It Works for Other Mission Types
+#### $requiredForMissions_proCom Contains:
+- Just a boolean (`true`) - not useful for commodity data
 
-- **CheapCommodityMission**: Uses reflection on its own class (works because it's in a compiled jar, not Janino)
-- **DeliveryMissionIntel**: Uses public API methods like `getName()` and `getEvent().getQuantity()`
-- **ProcurementMissionIntel** (Intel type): Stores data on contact's memory via `$mpm_commodityName` and `$mpm_quantity`
+### 5. Rules.csv Analysis
 
-### 5. ProcurementMission Source Code Analysis
+The game's `rules.csv` reveals how the data flows:
 
-From `ProcurementMission.java`:
-```java
-protected String commodityId;
-protected int quantity;
-protected MarketAPI deliveryMarket;
-protected PersonAPI deliveryContact;
+```csv
+proComBlurb,proCom_blurb,,,"""I need to procure a quantity of $proCom_commodityName."""
+proComOfferBeginBar,DialogOptionSelected,$option == proCom_startBar,"$missionId = proCom
 ```
 
-The class stores:
-- `commodityId` - the commodity ID (e.g., "ore")
-- `quantity` - the required quantity
-- `deliveryContact` - the person to deliver to (for remote missions)
+Key memory variables used in rules:
+- `$proCom_commodityName` - display name (e.g., "Ore")
+- `$proCom_quantity` - quantity needed
+- `$proCom_commodityId` - commodity ID (e.g., "ore")
+- `$proCom_pricePerUnit` - price per unit
+- `$proCom_totalPrice` - total price
+- `$proCom_marketName` - delivery market name
+- `$proCom_ref` - reference to ProcurementMission object
 
-Data is written via `updateInteractionDataImpl()`:
+**Critical Finding:** These memory keys are set by the rule script when the player **interacts with the mission** (starts the dialog by selecting "Talk to the person"). They are NOT populated when the mission is simply created.
+
+The data flow is:
+1. Mission is created → memory keys are NOT populated
+2. Player interacts with mission (starts dialog) → rule script populates memory keys
+3. Mission continues → memory keys remain available while player is in dialog context
+
+This explains why `$proCom_commodityId` and `$proCom_quantity` are null - the player hasn't interacted with this mission yet.
+
+### 6. Field Listing Attempt
+
+Attempted to list all declared fields on ProcurementMission via reflection - also blocked by SecurityException.
+
+### 7. Stage Investigation
+
+The ProcurementMission class has a `Stage` enum, but it doesn't contain commodity/quantity information.
+
+### 8. Public API Methods Tested (NEW)
+
+Tested various public API methods on ProcurementMission:
+
+| Method | Returns | Contains Quantity? |
+|--------|---------|-------------------|
+| `getSmallDescriptionTitle()` | "Ore Procurement" | No - commodity type only |
+| `getName()` | "Procurement - Ore" | No - commodity type only |
+| `getBaseName()` | "Ore Procurement" | No - commodity type only |
+| `getIntelTags()` | [Important, Missions, Accepted, hegemony] | No |
+
+**Commodity type CAN be extracted** from these methods by parsing the string:
+- "Ore Procurement" → strip " Procurement" → "Ore" → map to "ore" using DISPLAY_NAME_TO_ID
+
+### 9. Protected Fields with No Public Getters (NEW)
+
+Decompiled ProcurementMission class reveals:
+
 ```java
-set("$proCom_commodityId", commodityId);
-set("$proCom_quantity", Misc.getWithDGS(quantity));
+protected String commodityId;  // e.g., "ore"
+protected int quantity;          // e.g., 1000
 ```
 
-The `set()` method writes to the **person's memory**, not the Intel's memory.
+These fields are **protected** with **no public getter methods**. The class has:
+- `getBaseName()` - returns "Ore Procurement" (commodity type only)
+- `getSpec()` - returns CommoditySpecAPI but is **protected**
+- No `getQuantity()` method exists
 
-### 6. The Data Isn't Where Expected
+### 10. Why Memory Keys Never Appear (NEW)
 
-The memory keys `$proCom_commodityId` and `$proCom_quantity` are NOT present on:
-- The mission giver's memory
-- The delivery contact's memory (for remote missions)
+Even after player interacts with the mission, the memory keys don't appear on the person's memory. This is because:
 
-This suggests the data is only populated when the player interacts with the mission (accepting, viewing details), not stored persistently.
+In BaseHubMission, the `set()` method writes to **transient** `interactionMemory`:
+```java
+public void set(String key, Object value) {
+    this.interactionMemory.set(key, value, 0.0F);  // transient field!
+}
+```
 
-## Potential Solutions
+The `interactionMemory` is only populated during dialog interaction via `updateInteractionData()`, and it's **not persisted** to the person's memory.
 
-### Option A: Compiled Plugin
-Move the mission tracking logic to a compiled Java plugin instead of Janino script, allowing reflection access.
+### 11. Comparison with DeliveryMissionIntel (NEW)
 
-### Option B: Use Rule Script Memory
-The `ProcurementMission` uses rules scripts for dialogs. The `$proCom_ref` memory key references the mission object. If accessible, could query the mission directly.
+**Why DeliveryMissionIntel works:**
+```java
+String name = deliveryIntel.getName();  // "Delivery - Ore"
+int quantity = deliveryIntel.getEvent().getQuantity();  // Public method chain!
+```
 
-### Option C: Accept Limitation
-Document that `ProcurementMission` tracking is not achievable via the public API without compiled code.
+**Why ProcurementMission doesn't:**
+- `ProcurementMission` has protected fields with no public getters
+- `ProcurementMissionIntel` has `getQuantity()` but it's **protected** (not public)
 
-### Option D: Check Delivery Contact Memory
-For remote procurement missions, try accessing the `deliveryContact` field via reflection to check their memory. This was attempted but likely also blocked.
+| Mission Type | Quantity Access | Works? |
+|--------------|-----------------|--------|
+| DeliveryMissionIntel | `getEvent().getQuantity()` | ✓ Yes |
+| ProcurementMissionIntel | `getQuantity()` (protected) | ✗ No |
+| ProcurementMission (bar) | No public getter | ✗ No |
+
+### 12. Mock TooltipMakerAPI Approach
+
+Attempted to call `createSmallDescription()` with a mock TooltipMakerAPI to capture rendered text. However:
+
+- TooltipMakerAPI is a complex interface with 100+ methods
+- Creating a mock would require implementing many methods
+- The text is rendered to UI, not returned as string
+- This approach was not fully tested due to complexity
+
+## Current Status
+
+### What Works
+- `ProcurementMissionIntel` (Intel variant) - works via `$mpm_commodityName` and `$mpm_quantity` memory keys
+- `DeliveryMissionIntel` - works via public API methods (`getEvent().getQuantity()`)
+- `CheapCommodityMission` - works via reflection (compiled class)
+- `ProcurementMission` (bar) - commodity type can be extracted from `getSmallDescriptionTitle()` or `getName()`
+
+### What Doesn't Work
+- `ProcurementMission` (bar variant) - quantity cannot be obtained via public API
+- All reflection attempts blocked by SecurityException
+- Memory keys never appear on person (transient interactionMemory)
+- Protected fields with no public getters
+
+## Solutions Implemented
+
+### Solution 1: Extract Commodity Type (Partial Fix)
+
+Commodity type CAN be extracted from public API:
+
+1. Call `getSmallDescriptionTitle()` → returns "Ore Procurement"
+2. Strip " Procurement" suffix → "Ore"
+3. Map to commodity ID using existing `DISPLAY_NAME_TO_ID` map → "ore"
+
+This provides partial functionality - the mod can track WHICH commodity is needed, but not the exact quantity.
+
+### Solution 2: Accept Quantity Limitation
+
+For the bar variant `ProcurementMission`, quantity tracking is not possible via public API. Options:
+- Document this as a known limitation
+- Track only commodity type (not quantity)
+- Use mock TooltipMakerAPI approach (complex, untested)
 
 ## Conclusion
 
-The `ProcurementMission` class (bar mission variant) cannot be tracked using the available public API. The data required (`commodityId`, `quantity`) is stored in protected fields that require reflection to access, which is blocked in script context.
+The `ProcurementMission` class (bar mission variant) cannot be fully tracked using the available public API because:
 
-The `ProcurementMissionIntel` class (Intel variant) might work since it stores data on the contact's memory using `$mpm_commodityName` and `$mpm_quantity` keys - but this is a different class.
+1. Memory keys `$proCom_commodityId` and `$proCom_quantity` are only set on transient `interactionMemory` during dialog, not persistently stored
+2. Reflection is blocked by SecurityException even in compiled plugins
+3. The protected fields (`commodityId`, `quantity`) have no public getter methods
+4. The data exists in the rule script's memory context, not persistently on the person
 
-**Recommendation:** Consider accepting this limitation or implementing a compiled plugin for full ProcurementMission support.
+**Partial fix implemented:** Commodity type can be extracted from `getSmallDescriptionTitle()` or `getName()`.
+
+**Recommendation:**
+- Implement commodity type extraction (works via public API)
+- Document quantity as known limitation for bar variant
+- Focus on `ProcurementMissionIntel` (Intel variant) which works fully
