@@ -2,6 +2,14 @@
 
 This file includes any bugs I find and observations I make while playtesting.
 
+## 0.1.27
+
+### Bugs
+
+#### Fixed
+
+- Metals to Supplies lines not calculation production rate correctly, it only shows the max rate
+
 ## 0.1.26
 
 ### Bugs

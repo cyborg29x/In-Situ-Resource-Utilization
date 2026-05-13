@@ -1,7 +1,7 @@
 {
   "id": "in_situ_resource_utilization",
   "name": "In-Situ Resource Utilization",
-  "version": "0.1.23",
+  "version": "0.1.28",
   "gameVersion": "0.98a-RC8",
   "author": "cyborg29x",
   "description": "Processing resources into more useful forms.",

@@ -4,14 +4,12 @@ This document lists all pending and currently tracked tasks.
 
 ## 0.1.X
 
-- Decide if direct raw ores to supplies steps will be kept.
 - Test if mission tracking works for both procurement(?) and delivery(✓) missions.
 - Check exact steps involved in the cheap commodity mission.
-- Alter the second Volatiles to Fuel step to only run when fuel is less than 20%.
-- Alter hullmod 10% cargo reduction to instead require the same amount of heavy machinery in inventory.
 
 ## 0.2.X
 
+- Alter hullmod 10% cargo reduction to instead require the same amount of heavy machinery in inventory.
 - Implement asteroid and planet mining system.
 
 ## 0.3.X
@@ -27,6 +25,7 @@ This document lists all pending and currently tracked tasks.
 This list includes features I'd maybe like to have, in the order that they appeared in my head.
 
 - Additional optimization and code cleanup.
+- Refactor resource processing into shared class for reuse in applyEffect() and createTooltip()
 - Adding a readme.md to the GitHub repo.
 - Restrict hullmod behind finding or purchasing hullmod unlock item.
 - Rebalance relevant NPC fleets to include commodities affected by this mod (may already be a thing).

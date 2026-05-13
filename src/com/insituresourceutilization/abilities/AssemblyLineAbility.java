@@ -74,7 +74,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
 
         float processingCapacity = totalBudget * days;
 
-        if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f && processingCapacity > 0) {
+        if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.2f && processingCapacity > 0) {
             float dailyFuelConsumption = Misc.getFuelPerDay(fleet, fleet.getCurrBurnLevel());
             float fuelNeeded = dailyFuelConsumption * days;
 
@@ -119,7 +119,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
 
         float fuelSpace = calculateFuelSpace(cargo);
 
-        if (fuelSpace > 0) {
+        if (cargo.getFuel() < cargo.getMaxFuel() * 0.2f && fuelSpace > 0) {
             float volatilesRequired = fuelSpace / InSituResourceUtilizationPlugin.VOLATILES_TO_FUEL_RATIO;
             float availableVolatiles = MissionCargoTracker.getAvailableQuantity("volatiles", cargo, reservedCommodities);
             float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT);
@@ -133,11 +133,6 @@ public class AssemblyLineAbility extends BaseToggleAbility {
         if (processingCapacity <= 0) return;
 
         processingCapacity -= processResource(cargo, processingCapacity, reservedCommodities,
-            "metals", InSituResourceUtilizationPlugin.METAL_PRICE,
-            "supplies", InSituResourceUtilizationPlugin.METAL_TO_SUPPLIES_RATIO);
-        if (processingCapacity <= 0) return;
-
-        processingCapacity -= processResource(cargo, processingCapacity, reservedCommodities,
             "ore", InSituResourceUtilizationPlugin.ORE_PRICE,
             "metals", InSituResourceUtilizationPlugin.ORE_TO_METAL_RATIO);
         if (processingCapacity <= 0) return;
@@ -145,6 +140,11 @@ public class AssemblyLineAbility extends BaseToggleAbility {
         processingCapacity -= processResource(cargo, processingCapacity, reservedCommodities,
             "rare_ore", InSituResourceUtilizationPlugin.TRANSPLUTONIC_ORE_PRICE,
             "rare_metals", InSituResourceUtilizationPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO);
+        if (processingCapacity <= 0) return;
+
+        processingCapacity -= processResource(cargo, processingCapacity, reservedCommodities,
+            "metals", InSituResourceUtilizationPlugin.METAL_PRICE,
+            "supplies", InSituResourceUtilizationPlugin.METAL_TO_SUPPLIES_RATIO);
         if (processingCapacity <= 0) return;
 
         processResource(cargo, processingCapacity, reservedCommodities,
@@ -400,7 +400,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                 float fuelSpace = calculateFuelSpace(cargo);
                 float volatilesAvailableForProcessing = Math.max(0, availableVolatiles - InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT);
 
-                if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.8f && fuelSpace > 0 && volatilesAvailableForProcessing > 0 && remainingCapacity > 0) {
+                if (fleet.isInHyperspace() && cargo.getFuel() < cargo.getMaxFuel() * 0.2f && fuelSpace > 0 && volatilesAvailableForProcessing > 0 && remainingCapacity > 0) {
                     float volatilesBudget = Math.min(remainingCapacity, volatilesAvailableForProcessing * InSituResourceUtilizationPlugin.VOLATILES_PRICE);
                     float dailyRate = remainingCapacity / InSituResourceUtilizationPlugin.VOLATILES_PRICE;
                     float timeDays = dailyRate > 0 ? volatilesAvailableForProcessing / dailyRate : 0f;
@@ -416,29 +416,22 @@ public class AssemblyLineAbility extends BaseToggleAbility {
 
                 float volatilesAfterHyperspace = Math.max(0, availableVolatiles - InSituResourceUtilizationPlugin.VOLATILE_RESERVE_AMOUNT);
 
-                float remainingCapacityBeforeMetals = remainingCapacity;
-                float metalBudget = Math.min(remainingCapacity, availableMetals * InSituResourceUtilizationPlugin.METAL_PRICE * timeIncrement);
-                if (availableMetals > 0 && remainingCapacity > 0 && metalBudget < availableMetals * InSituResourceUtilizationPlugin.METAL_PRICE) {
-                    float dailyRate = remainingCapacity / InSituResourceUtilizationPlugin.METAL_PRICE;
-                    float timeDays = dailyRate > 0 ? availableMetals / dailyRate : 0f;
-                    String timeEstimate = formatTimeEstimate(timeDays);
-                    String inputAmount = String.valueOf((int)(float)Math.floor(availableMetals));
-                    String outputAmount = String.valueOf((int)(float)Math.floor(availableMetals * InSituResourceUtilizationPlugin.METAL_TO_SUPPLIES_RATIO));
-                    String inputCommodity = getCommodityName("metals");
-                    String outputCommodity = getCommodityName("supplies");
-                    String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * InSituResourceUtilizationPlugin.METAL_TO_SUPPLIES_RATIO : 0f);
-                    entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
-                    remainingCapacity -= metalBudget;
+                float supplyNeed = calculateSupplyNeed(fleet, 1f, cargo);
+                float cappedDailyMetalBudget = Math.min(remainingCapacity,
+                    supplyNeed / InSituResourceUtilizationPlugin.METAL_TO_SUPPLIES_RATIO * InSituResourceUtilizationPlugin.METAL_PRICE);
+                boolean cappedMetalsProcessed = availableMetals > 0 && remainingCapacity > 0 && cappedDailyMetalBudget > 0;
+                if (cappedMetalsProcessed) {
+                    remainingCapacity -= cappedDailyMetalBudget;
                 }
 
+                float remainingCapacityBeforeMetals = remainingCapacity;
+                float metalBudget = Math.min(remainingCapacity, availableMetals * InSituResourceUtilizationPlugin.METAL_PRICE * timeIncrement);
                 float capacityAfterMetals = remainingCapacity;
                 float metalBudgetForTransCalc = 0f;
                 if (availableMetals > 0 && remainingCapacityBeforeMetals > 0 && metalBudget < availableMetals * InSituResourceUtilizationPlugin.METAL_PRICE) {
                     metalBudgetForTransCalc = Math.min(remainingCapacityBeforeMetals, availableMetals * InSituResourceUtilizationPlugin.METAL_PRICE);
                     capacityAfterMetals = remainingCapacityBeforeMetals - metalBudgetForTransCalc;
                 }
-
-                float supplyNeed = calculateSupplyNeed(fleet, 1f, cargo);
                 float metalSuppliesProduced = metalBudgetForTransCalc / InSituResourceUtilizationPlugin.METAL_PRICE * InSituResourceUtilizationPlugin.METAL_TO_SUPPLIES_RATIO;
                 float remainingNeed = Math.max(0, supplyNeed - metalSuppliesProduced);
                 float maxTransBudget = remainingNeed / InSituResourceUtilizationPlugin.TRANSPLUTONICS_TO_SUPPLIES_RATIO * InSituResourceUtilizationPlugin.TRANSPLUTONICS_PRICE;
@@ -460,7 +453,7 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                 float fuelSpaceUncapped = calculateFuelSpace(cargo);
                 float inputToProcess = remainingCapacity > 0 ? remainingCapacity / InSituResourceUtilizationPlugin.VOLATILES_PRICE : 0f;
                 float volatilesForUncapped = Math.min(inputToProcess, volatilesAfterHyperspace);
-                if (fuelSpaceUncapped > 0 && volatilesForUncapped > 0) {
+                if (cargo.getFuel() < cargo.getMaxFuel() * 0.2f && fuelSpaceUncapped > 0 && volatilesForUncapped > 0) {
                     float effectiveBudget = volatilesForUncapped * InSituResourceUtilizationPlugin.VOLATILES_PRICE;
                     float outputProduced = volatilesAfterHyperspace * InSituResourceUtilizationPlugin.VOLATILES_TO_FUEL_RATIO;
                     float dailyRate = remainingCapacity > 0 ? remainingCapacity / InSituResourceUtilizationPlugin.VOLATILES_PRICE : 0f;
@@ -501,6 +494,24 @@ public class AssemblyLineAbility extends BaseToggleAbility {
                     String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * InSituResourceUtilizationPlugin.TRANSPLUTONIC_ORE_TO_TRANSPLUTONICS_RATIO : 0f);
                     entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
                     remainingCapacity -= transOreBudget;
+                }
+
+                float uncappedMetalBudget = 0f;
+                if (availableMetals > 0 && remainingCapacity > 0) {
+                    uncappedMetalBudget = Math.min(remainingCapacity, availableMetals * InSituResourceUtilizationPlugin.METAL_PRICE);
+                    remainingCapacity -= uncappedMetalBudget;
+                }
+
+                if (cappedMetalsProcessed || uncappedMetalBudget > 0) {
+                    float dailyRate = cappedDailyMetalBudget / InSituResourceUtilizationPlugin.METAL_PRICE;
+                    float timeDays = dailyRate > 0 ? availableMetals / dailyRate : 0f;
+                    String timeEstimate = formatTimeEstimate(timeDays);
+                    String inputAmount = String.valueOf((int)(float)Math.floor(availableMetals));
+                    String outputAmount = String.valueOf((int)(float)Math.floor(availableMetals * InSituResourceUtilizationPlugin.METAL_TO_SUPPLIES_RATIO));
+                    String inputCommodity = getCommodityName("metals");
+                    String outputCommodity = getCommodityName("supplies");
+                    String outputPerDay = formatAmount(timeDays >= 1f ? dailyRate * InSituResourceUtilizationPlugin.METAL_TO_SUPPLIES_RATIO : 0f);
+                    entries.add(new ResourceEntry(timeDays, timeEstimate, inputAmount, inputCommodity, outputAmount, outputCommodity, outputPerDay));
                 }
 
                 if (availableOrganics > 0 && remainingCapacity > 0) {

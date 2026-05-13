@@ -2,6 +2,12 @@
 
 All notable changes to this mod will be documented in this file.
 
+## [0.1.28] - 2026-05-13
+
+- Uncapped extra Metal to Supplies moved to after Transplutonic Ore to Transplutonics conversion
+- Fixed ability tooltip production rate bug
+- Altered both Volatiles to Fuel to only run when fleet's fuel is under 20% of maximum capacity instead of 80%
+
 ## [0.1.27] - 2026-05-12
 
 - Mission tracking reworked to reserve entire commodity type due to game API limitations
