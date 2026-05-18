@@ -2,6 +2,12 @@
 
 This file includes any bugs I find and observations I make while playtesting.
 
+## 0.1.28
+
+### Notes
+
+- With an inventory close to full and excess of metals, i find myself wishing it would prioritize converting metals to supplies. In theory this yields less space savings than converting either ores but i keep finding a lot of metal from ship battles and bounty hunting.
+
 ## 0.1.27
 
 ### Bugs
